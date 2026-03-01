@@ -73,6 +73,10 @@
                 </div>
 
                 <div class="profile-meta">
+                    @if (Model?.JobPreference != null && Model.JobPreference > 0)
+                    {
+                        <span class="meta-item" style="background:rgba(0,221,85,0.12);border:1px solid rgba(0,221,85,0.3);color:#00DD55;border-radius:20px;padding:0.2rem 0.75rem;font-size:0.8rem;font-weight:600;">🟢 Disponível para trabalhar</span>
+                    }
                     @if (!string.IsNullOrEmpty(location))
                     {
                         <span class="meta-item">📍 @location</span>
@@ -291,6 +295,37 @@
                     }
                 </div>
             </div>
+
+            @if (Model != null)
+            {
+                var completeness = 0;
+                if (!string.IsNullOrWhiteSpace(Model.ProfileBio)) completeness += 20;
+                if (Model.Experiences != null && Model.Experiences.Any()) completeness += 20;
+                if (Model.Educations != null && Model.Educations.Any()) completeness += 20;
+                if (Model.Skills != null && Model.Skills.Any()) completeness += 20;
+                if (!string.IsNullOrEmpty(Model.ProfilePictureUrl)) completeness += 20;
+                <div class="card mt-3">
+                    <div class="card-header"><h4>Completude do perfil</h4></div>
+                    <div class="card-body">
+                        <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+                            <div style="flex:1; background:rgba(255,255,255,0.08); border-radius:20px; height:8px; overflow:hidden;">
+                                <div style="width:@completeness%; background: @(completeness >= 80 ? "#00DD55" : completeness >= 40 ? "#f59e0b" : "#0052CC"); height:100%; border-radius:20px; transition:width 0.6s;"></div>
+                            </div>
+                            <span style="font-size:0.82rem; font-weight:600;">@completeness%</span>
+                        </div>
+                        <p style="font-size:0.78rem; color:#a8b2c1; margin:0;">
+                            @if (completeness < 100 && isOwner)
+                            {
+                                <span>Completa o teu perfil para aumentar a visibilidade.</span>
+                            }
+                            else if (completeness == 100)
+                            {
+                                <span style="color:#00DD55;">✓ Perfil completo!</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            }
         </aside>
     </div>
 </section>
