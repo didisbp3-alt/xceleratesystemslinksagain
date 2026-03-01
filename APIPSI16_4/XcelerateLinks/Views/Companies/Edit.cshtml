@@ -1,37 +1,87 @@
 @model Company
+@using System.Security.Claims
 @{
     ViewData["Title"] = "Editar empresa";
+    var initial = !string.IsNullOrEmpty(Model?.Name) ? Model.Name[0].ToString().ToUpper() : "?";
 }
 
-<h2 class="mb-3">Editar empresa</h2>
+<style>
+    .co-edit-container { max-width: 700px; margin: 0 auto; padding: 2rem 0; }
+    .co-edit-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 2rem; margin-bottom: 1.25rem; }
+    .co-edit-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .field-styled { margin-bottom: 1rem; }
+    .field-styled label { font-size: 0.85rem; font-weight: 600; color: var(--dark-text-muted,#a8b2c1); margin-bottom: 0.4rem; display: block; }
+    .field-styled input, .field-styled textarea {
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: inherit;
+        border-radius: 10px; padding: 0.55rem 0.85rem; width: 100%; font-size: 0.9rem;
+    }
+    .field-styled input:focus, .field-styled textarea:focus { border-color: #0052CC; outline: none; }
+    .btn-save { background: #0052CC; color: #fff; border: none; border-radius: 30px; padding: 0.65rem 2rem; font-weight: 600; }
+    .btn-save:hover { background: #0040A0; }
+    .logo-preview { width: 72px; height: 72px; border-radius: 12px; object-fit: cover; border: 2px solid rgba(255,255,255,0.15); }
+    .logo-placeholder { width: 72px; height: 72px; border-radius: 12px; background: linear-gradient(135deg,#0052CC,#00DD55); display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700; color: #fff; }
+    .upload-row { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+    .file-input-styled { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); border-radius: 10px; padding: 0.6rem 1rem; font-size: 0.88rem; color: inherit; cursor: pointer; }
+</style>
 
-<form asp-action="Edit" method="post">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="CompanyId" />
+<div class="container py-4">
+    <div class="co-edit-container">
+        <a asp-action="Details" asp-route-id="@Model.CompanyId" class="btn btn-sm btn-outline-secondary mb-4">← Voltar</a>
 
-    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="CompanyId" />
+            <input type="hidden" asp-for="CompanyLogoUrl" />
+            <input type="hidden" asp-for="CreatedAt" />
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-    <div class="mb-3">
-        <label asp-for="Name" class="form-label">Nome</label>
-        <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
+            <div class="co-edit-card">
+                <h3>🏢 Informação da empresa</h3>
+                <div class="field-styled">
+                    <label asp-for="Name">Nome da empresa *</label>
+                    <input asp-for="Name" placeholder="Nome da empresa..." />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="field-styled">
+                    <label asp-for="Industry">Setor / Indústria</label>
+                    <input asp-for="Industry" placeholder="Ex: Tecnologia, Saúde, Finanças..." />
+                </div>
+                <div class="field-styled">
+                    <label asp-for="Location">Localização</label>
+                    <input asp-for="Location" placeholder="Ex: Lisboa, Portugal..." />
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 align-items-center">
+                <button type="submit" class="btn-save">Guardar alterações</button>
+                <a asp-action="Details" asp-route-id="@Model.CompanyId" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+
+        <!-- Logo upload (separate form) -->
+        <div class="co-edit-card mt-3">
+            <h3>🖼️ Logótipo da empresa</h3>
+            <div class="upload-row mb-3">
+                @if (!string.IsNullOrEmpty(Model?.CompanyLogoUrl))
+                {
+                    <img src="@Model.CompanyLogoUrl" class="logo-preview" alt="Logo" />
+                }
+                else
+                {
+                    <span class="logo-placeholder">@initial</span>
+                }
+                <div>
+                    <p style="font-size:0.82rem;color:#a8b2c1;margin:0 0 0.4rem;">Ficheiro JPG, PNG ou GIF. Máx. 5MB.</p>
+                    <form asp-action="UploadLogo" asp-route-id="@Model.CompanyId" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="file" name="logoFile" accept="image/*" class="file-input-styled" id="logoFileInput" />
+                        <button type="submit" class="btn-save mt-2" style="padding:0.4rem 1.2rem;font-size:0.85rem;">Carregar logótipo</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label asp-for="Industry" class="form-label">Indústria</label>
-        <input asp-for="Industry" class="form-control" />
-        <span asp-validation-for="Industry" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="Location" class="form-label">Localização</label>
-        <input asp-for="Location" class="form-control" />
-        <span asp-validation-for="Location" class="text-danger"></span>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Atualizar</button>
-    <a asp-action="Details" asp-route-id="@Model.CompanyId" class="btn btn-outline-secondary">Cancelar</a>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

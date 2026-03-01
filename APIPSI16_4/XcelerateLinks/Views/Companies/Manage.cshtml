@@ -99,7 +99,7 @@
         <div class="manage-section">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
                 <h3 style="margin:0;">💼 Oportunidades (@opps.Count)</h3>
-                <a asp-controller="Opportunities" asp-action="Create" class="btn-sm-blue">+ Nova vaga</a>
+                <a asp-controller="Opportunities" asp-action="Create" asp-route-companyId="@company.CompanyId" class="btn-sm-blue">+ Nova vaga</a>
             </div>
 
             @if (!opps.Any())
@@ -144,5 +144,64 @@
                 </div>
             </div>
         </div>
+
+        <!-- Team members section -->
+        <div class="manage-section" id="team-section">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                <h3 style="margin:0;">👥 Equipa</h3>
+            </div>
+            <div id="team-list"><p style="color:#a8b2c1;font-size:0.85rem;">A carregar membros...</p></div>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+(function() {
+    var companyId = @company.CompanyId;
+    var ROLES = {
+        0: { label: 'Pendente', color: '#6b7280', desc: 'Membro pendente de aprovação' },
+        1: { label: 'Recrutador', color: '#0052CC', desc: 'Pode criar vagas para o seu cargo específico' },
+        2: { label: 'Gestor RH', color: '#7c3aed', desc: 'Pode criar vagas de qualquer tipo' },
+        3: { label: 'Admin de Empresa', color: '#059669', desc: 'Pode criar vagas e editar o perfil da empresa' }
+    };
+
+    function getToken() {
+        var m = document.cookie.split(';').map(function(c){return c.trim();}).find(function(c){return c.startsWith('ApiAccessToken=');});
+        return m ? decodeURIComponent(m.split('=')[1]) : (localStorage.getItem('token')||'');
+    }
+    function apiFetch(url, opts) {
+        opts = opts || {};
+        return fetch(url, Object.assign({}, opts, { headers: Object.assign({'Content-Type':'application/json','Authorization':'Bearer '+getToken()}, opts.headers||{}) }));
+    }
+
+    function loadTeam() {
+        apiFetch('/api/companies/' + companyId + '/profile').then(function(r){ return r.json(); }).then(function(profile) {
+            var list = document.getElementById('team-list');
+            if (!list) return;
+            var mems = (profile && profile.members) ? profile.members : [];
+            if (mems.length === 0) {
+                list.innerHTML = '<p style="color:#a8b2c1;font-size:0.85rem;">Ainda sem membros de equipa.</p>';
+                return;
+            }
+            list.innerHTML = mems.map(function(m) {
+                var r = ROLES[m.role] || { label: 'Membro', color: '#a8b2c1', desc: '' };
+                return '<div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+                    '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0052CC,#00DD55);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#fff;">' +
+                    (m.userName ? m.userName[0].toUpperCase() : '?') + '</div>' +
+                    '<div style="flex:1;">' +
+                    '<div style="font-weight:600;font-size:0.9rem;">' + (m.userName || '?') + '</div>' +
+                    '<div style="font-size:0.75rem;color:#a8b2c1;">' + r.desc + '</div></div>' +
+                    '<span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:0.2rem 0.65rem;font-size:0.75rem;font-weight:600;color:' + r.color + ';">' + r.label + '</span>' +
+                    '</div>';
+            }).join('');
+        }).catch(function() {
+            var list = document.getElementById('team-list');
+            if (list) list.innerHTML = '<p style="color:#a8b2c1;font-size:0.85rem;">Não foi possível carregar membros.</p>';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadTeam);
+})();
+</script>
+}

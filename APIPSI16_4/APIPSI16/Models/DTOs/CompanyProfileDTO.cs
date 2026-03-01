@@ -9,4 +9,13 @@ public class CompanyProfileDTO
     public string? CompanyLogoUrl { get; set; }
     public DateTime? CreatedAt { get; set; }
     public List<OpportunityDTO> Opportunities { get; set; } = new();
+    public List<CompanyMemberSummaryDTO> Members { get; set; } = new();
+}
+
+public class CompanyMemberSummaryDTO
+{
+    public int UserId { get; set; }
+    public string? UserName { get; set; }
+    public int Role { get; set; }
+    public string? Title { get; set; }
 }

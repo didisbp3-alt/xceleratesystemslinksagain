@@ -306,6 +306,24 @@ namespace APIPSI16.Controllers
                 TargetId = uid.Value,
                 CreatedAt = DateTime.UtcNow
             });
+
+            // Create notifications for all admins so they see the pending request
+            var adminIds = await _context.Users
+                .Where(u => u.Role == 0)
+                .Select(u => u.UserId)
+                .ToListAsync();
+
+            var now = DateTime.UtcNow;
+            _context.Notifications.AddRange(adminIds.Select(adminId => new Notification
+            {
+                UserId = adminId,
+                ActorUserId = uid.Value,
+                Type = "EmployerRequest",
+                Payload = uid.Value.ToString(),
+                IsRead = false,
+                CreatedAt = now
+            }));
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Pedido submetido. Aguarda aprovação do administrador.", documentUrl = docUrl });
@@ -347,6 +365,26 @@ namespace APIPSI16.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Pedido de empregador rejeitado." });
+        }
+
+        // GET: api/Users/pending-employers – list users with Role = 3 (pending) for admin
+        [HttpGet("pending-employers")]
+        [Authorize(Roles = "0")]
+        public async Task<IActionResult> GetPendingEmployers()
+        {
+            var pending = await _context.Users
+                .Where(u => u.Role == 3)
+                .Select(u => new UserDTO
+                {
+                    UserId = u.UserId,
+                    Name = u.Name,
+                    Email = u.Email,
+                    ProfilePictureUrl = u.ProfilePictureUrl,
+                    Role = u.Role
+                })
+                .ToListAsync();
+
+            return Ok(pending);
         }
 
         // GET: api/Users/network – public user listing for the network/discovery page

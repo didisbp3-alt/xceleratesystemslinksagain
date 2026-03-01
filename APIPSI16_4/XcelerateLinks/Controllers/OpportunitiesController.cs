@@ -90,7 +90,7 @@ namespace XcelerateLinks.Mvc.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(int? companyId = null)
         {
             if (!await ValidateSessionAsync())
                 return RedirectToAction("Login", "Account");
@@ -99,6 +99,10 @@ namespace XcelerateLinks.Mvc.Controllers
             var userId = GetCurrentUserId();
             if (userId.HasValue)
                 model.CreatorId = userId.Value;
+
+            // Pre-fill company if navigating from company Manage page
+            if (companyId.HasValue)
+                model.CompanyId = companyId.Value;
 
             await LoadDropdownsAsync();
             return View(model);

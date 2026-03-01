@@ -94,7 +94,18 @@ namespace APIPSI16.Controllers
                 Location = company.Location,
                 CompanyLogoUrl = company.CompanyLogoUrl,
                 CreatedAt = company.CreatedAt,
-                Opportunities = opportunities
+                Opportunities = opportunities,
+                Members = await _context.CompanyMembers
+                    .Where(cm => cm.CompanyId == id)
+                    .Include(cm => cm.User)
+                    .Select(cm => new CompanyMemberSummaryDTO
+                    {
+                        UserId = cm.UserId,
+                        UserName = cm.User.Name,
+                        Role = cm.Role,
+                        Title = cm.Title
+                    })
+                    .ToListAsync()
             };
 
             return Ok(profileDto);

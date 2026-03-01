@@ -257,6 +257,11 @@ namespace XcelerateLinks.Mvc.Controllers
                 ? "Utilizador aprovado como empregador."
                 : "Não foi possível aprovar o utilizador.";
 
+            // If came from the requests page, go back there
+            var referer = Request.Headers["Referer"].ToString();
+            if (referer.Contains("EmployerRequests"))
+                return RedirectToAction(nameof(EmployerRequests));
+
             return RedirectToAction(nameof(Details), new { id });
         }
 
@@ -272,9 +277,32 @@ namespace XcelerateLinks.Mvc.Controllers
             await client.PostAsync($"api/users/{id}/reject-employer", null);
 
             TempData["SuccessMessage"] = "Pedido rejeitado.";
+
+            // If came from the requests page, go back there
+            var referer = Request.Headers["Referer"].ToString();
+            if (referer.Contains("EmployerRequests"))
+                return RedirectToAction(nameof(EmployerRequests));
+
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        // GET: admin page listing all pending employer requests
+        [HttpGet]
+        public async Task<IActionResult> EmployerRequests()
+        {
+            if (!await ValidateSessionAsync())
+                return RedirectToAction("Login", "Account");
 
+            if (!IsAdmin())
+                return RedirectToAction("Index", "Home");
+
+            var client = CreateAuthorizedClient();
+            var resp = await client.GetAsync("api/users/pending-employers");
+            IEnumerable<UserDTO> pending = Array.Empty<UserDTO>();
+            if (resp.IsSuccessStatusCode)
+                pending = await resp.Content.ReadFromJsonAsync<IEnumerable<UserDTO>>() ?? Array.Empty<UserDTO>();
+
+            return View(pending);
+        }
     }
 }

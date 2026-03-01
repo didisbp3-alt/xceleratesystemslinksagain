@@ -75,10 +75,11 @@
 
                         @if (isAdmin)
                         {
-                            <a class="btn-filter">Admin</a>
+                            <a class="btn-filter" asp-controller="Home" asp-action="AdminIndex">Admin</a>
+                            <a href="/Users/EmployerRequests" id="admin-req-btn" class="btn-ghost" style="position:relative;" title="Pedidos de Empregador">🔔<span id="admin-req-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.65rem;font-weight:700;align-items:center;justify-content:center;border:2px solid #0b1220;"></span></a>
                         }
 
-                        <button id="langToggle" class="btn-ghost" title="Switch language">🌐</button>
+                        <button id="langToggle" class="btn-ghost" title="Switch language">EN</button>
                         <button id="themeToggle" class="btn-ghost">🌙</button>
 
                         <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
@@ -88,7 +89,7 @@
                     }
                     else
                     {
-                        <button id="langToggle" class="btn-ghost" title="Switch language">🌐</button>
+                        <button id="langToggle" class="btn-ghost" title="Switch language">EN</button>
                         <button id="themeToggle" class="btn-ghost">🌙</button>
                         <a class="btn-ghost" asp-controller="Account" asp-action="Login">Entrar</a>
                         <a class="btn-cta" asp-controller="Account" asp-action="Register">Criar Conta</a>
@@ -159,6 +160,34 @@
             setTheme(currentTheme === 'dark' ? 'light' : 'dark');
         });
     </script>
+@if (isAdmin)
+{
+<script>
+// Admin notification badge for pending employer requests
+(function() {
+    function getToken() {
+        var m = document.cookie.split(';').map(function(c){return c.trim();}).find(function(c){return c.startsWith('ApiAccessToken=');});
+        return m ? decodeURIComponent(m.split('=')[1]) : (localStorage.getItem('token')||'');
+    }
+    function updateReqBadge() {
+        fetch('/api/users/pending-employers', {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        }).then(function(r){ return r.json(); }).then(function(data) {
+            var badge = document.getElementById('admin-req-badge');
+            if (badge) {
+                if (data && data.length > 0) {
+                    badge.style.display = 'flex';
+                    badge.textContent = data.length > 9 ? '9+' : data.length;                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }).catch(function(){});
+    }
+    document.addEventListener('DOMContentLoaded', function() { updateReqBadge(); });
+    setInterval(updateReqBadge, 60000); // refresh every minute
+})();
+</script>
+}
 <script>
 (function() {
     // Scroll-reveal via IntersectionObserver
@@ -232,7 +261,6 @@
         en: {
             // Navigation
             'Pesquisar oportunidades...': 'Search opportunities...',
-            'Admin': 'Admin',
             'Sair': 'Sign out',
             'Entrar': 'Sign in',
             'Criar Conta': 'Create Account',
@@ -260,62 +288,44 @@
             'Empregador': 'Employer',
             'Ver todos os utilizadores': 'View all users',
             'Sem descrição pública.': 'No public description.',
-            'Sobre': 'About',
             'Experiência': 'Experience',
             'Formação': 'Education',
             'Competências': 'Skills',
-            'Contacto': 'Contact',
             'Avaliações': 'Reviews',
             'Nenhuma experiência pública disponível.': 'No public experience available.',
             'Nenhuma formação adicionada.': 'No education added.',
             'Nenhuma competência listada.': 'No skills listed.',
-            'Oportunidades': 'Opportunities',
             'Candidatar': 'Apply',
-            'Candidatar-me': 'Apply now',
-            'Submeter candidatura →': 'Submit application →',
             'Cancelar': 'Cancel',
-            'Voltar às oportunidades': 'Back to opportunities',
             // Chat
-            '💬 Mensagens': '💬 Messages',
-            '+ Nova': '+ New',
             'Pesquisar conversas...': 'Search conversations...',
             'Sem conversas': 'No conversations',
             'Sem mensagens': 'No messages',
-            'Seleciona uma conversa para começar a mensagem': 'Select a conversation to start messaging',
-            'Ou cria uma nova conversa →': 'Or create a new conversation →',
             'Escreve uma mensagem...': 'Write a message...',
-            'está a escrever...': 'is typing...',
-            '🟢 Online': '🟢 Online',
-            '⚪ A conectar...': '⚪ Connecting...',
-            'Utilizador': 'User',
         },
         pt: {}
     };
 
-    var currentLang = localStorage.getItem('siteLang') || 'pt';
+    // Always start in Portuguese — ignore any stale 'en' from localStorage
+    var currentLang = 'pt';
     var originalTexts = new Map();
 
     function applyLang(lang) {
         if (lang === 'pt') {
-            // Restore originals
             originalTexts.forEach(function(orig, node) {
-                node.textContent = orig;
+                if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
+                    node.placeholder = orig;
+                } else {
+                    node.textContent = orig;
+                }
             });
             originalTexts.clear();
             document.documentElement.lang = 'pt-PT';
         } else {
             var dict = translations[lang] || {};
-            document.querySelectorAll('a, button, span, p, h1, h2, h3, h4, h5, label, th, td, div.conv-last, div.conv-name, div.msg-sender-name, input[placeholder], textarea[placeholder]').forEach(function(el) {
-                // Handle placeholder attributes
-                if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.placeholder) {
-                    var key = el.placeholder;
-                    if (dict[key] && !originalTexts.has(el)) {
-                        originalTexts.set(el, el.placeholder);
-                        el.placeholder = dict[key];
-                    }
-                    return;
-                }
-                // Handle text nodes
+            document.querySelectorAll('a, button, span, p, h1, h2, h3, h4, h5, label, th, td').forEach(function(el) {
+                // Skip the lang/theme toggle buttons themselves
+                if (el.id === 'langToggle' || el.id === 'themeToggle') return;
                 if (el.children.length === 0 && el.textContent) {
                     var text = el.textContent.trim();
                     if (dict[text]) {
@@ -324,18 +334,25 @@
                     }
                 }
             });
+            document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(function(el) {
+                var key = el.placeholder;
+                if (dict[key] && !originalTexts.has(el)) {
+                    originalTexts.set(el, el.placeholder);
+                    el.placeholder = dict[key];
+                }
+            });
             document.documentElement.lang = 'en';
         }
         var btn = document.getElementById('langToggle');
-        if (btn) btn.textContent = lang === 'pt' ? '🌐 EN' : '🌐 PT';
-        localStorage.setItem('siteLang', lang);
+        if (btn) btn.textContent = lang === 'pt' ? 'EN' : 'PT';
         currentLang = lang;
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        applyLang(currentLang);
+        // Initialize button label (we're always in PT on load)
         var btn = document.getElementById('langToggle');
         if (btn) {
+            btn.textContent = 'EN';
             btn.addEventListener('click', function() {
                 applyLang(currentLang === 'pt' ? 'en' : 'pt');
             });

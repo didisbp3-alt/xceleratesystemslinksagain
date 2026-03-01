@@ -305,7 +305,10 @@ function MessagesApp() {
             conn.invoke('JoinChat', chatId).catch(e => console.warn(e));
         }
         loadMessages(chatId);
-        loadConversations();
+        // Mark all unread messages as read
+        authFetch(`/api/chat/${chatId}/messages/read-all`, { method: 'PUT' })
+            .then(() => loadConversations())
+            .catch(() => {});
     }
 
     async function sendMessage(e) {

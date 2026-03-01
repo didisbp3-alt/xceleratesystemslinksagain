@@ -163,6 +163,10 @@
             loadMsgs(chatId);
             const c = connRef.current;
             if (c?.state==='Connected') c.invoke('JoinChat',chatId).catch(()=>{});
+            // Mark all unread messages in this chat as read
+            apiFetch(`/api/chat/${chatId}/messages/read-all`, {method:'PUT'})
+                .then(()=>loadConvs())
+                .catch(()=>{});
         }
 
         async function sendMsg(e) {

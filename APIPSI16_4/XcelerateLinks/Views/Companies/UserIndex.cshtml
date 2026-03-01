@@ -89,21 +89,19 @@
     </div>
 
     @{
-        var myCompaniesRaw = ViewBag.MyCompanies as System.Collections.IEnumerable;
+        var myCompanies = ViewBag.MyCompanies as List<XcelerateLinks.Mvc.Controllers.MyCompanyItem>;
     }
 
-    @if (myCompaniesRaw != null)
+    @if (myCompanies != null && myCompanies.Any())
     {
         <div style="background:rgba(0,82,204,0.08);border:1px solid rgba(0,82,204,0.2);border-radius:14px;padding:1.2rem 1.5rem;margin-bottom:1.5rem;">
             <div style="font-weight:700;margin-bottom:0.75rem;">🏢 As Minhas Empresas</div>
             <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
-                @foreach (var c in myCompaniesRaw)
+                @foreach (var c in myCompanies)
                 {
-                    var compId = (int)((dynamic)c).CompanyId;
-                    var compName = (string?)((dynamic)c).CompanyName ?? "Empresa";
-                    <a href="@Url.Action("Manage","Companies",new{id=compId})"
+                    <a href="@Url.Action("Manage","Companies",new{id=c.CompanyId})"
                        style="background:rgba(0,82,204,0.15);border:1px solid rgba(0,82,204,0.3);color:#4f8ef7;border-radius:30px;padding:0.35rem 1rem;font-size:0.85rem;text-decoration:none;">
-                        @compName ⚙️
+                        @(c.CompanyName ?? "Empresa") ⚙️
                     </a>
                 }
             </div>

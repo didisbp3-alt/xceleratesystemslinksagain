@@ -191,7 +191,23 @@ namespace APIPSI16.Controllers
             return NoContent();
         }
 
-        // GET: api/Chat/conversations
+        // PUT: api/Chat/{chatId}/messages/read-all
+        // Mark all unread messages in a chat as read (for the current user)
+        [HttpPut("{chatId}/messages/read-all")]
+        public async Task<IActionResult> MarkAllAsRead(int chatId)
+        {
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue) return Unauthorized();
+
+            var now = DateTime.UtcNow;
+            await _context.ChatMessages
+                .Where(m => m.ChatId == chatId
+                         && m.SenderUserId != currentUserId.Value
+                         && m.ReadAt == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(m => m.ReadAt, now));
+
+            return NoContent();
+        }
         // Get chat list with unread counts for current user
         [HttpGet("conversations")]
         public async Task<IActionResult> GetConversations()

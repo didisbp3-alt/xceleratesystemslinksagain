@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using APIPSI16.Models;
 using APIPSI16.Services;
+using System.Text.Json;
 
 namespace XcelerateLinks.Mvc.Controllers
 {
@@ -43,8 +44,9 @@ namespace XcelerateLinks.Mvc.Controllers
                 var myCompResp = await client.GetAsync("api/users/me/companies");
                 if (myCompResp.IsSuccessStatusCode)
                 {
-                    var myComps = await myCompResp.Content.ReadFromJsonAsync<IEnumerable<dynamic>>();
-                    ViewBag.MyCompanies = myComps;
+                    var myComps = await myCompResp.Content
+                        .ReadFromJsonAsync<IEnumerable<MyCompanyItem>>() ?? Array.Empty<MyCompanyItem>();
+                    ViewBag.MyCompanies = myComps.ToList();
                 }
             }
 
@@ -206,5 +208,27 @@ namespace XcelerateLinks.Mvc.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        // POST: upload company logo via multipart form
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadLogo(int id, IFormFile? logoFile)
+        {
+            if (!await ValidateSessionAsync())
+                return RedirectToAction("Login", "Account");
+
+            if (logoFile != null && logoFile.Length > 0)
+            {
+                var client = CreateAuthorizedClient();
+                using var form = new MultipartFormDataContent();
+                form.Add(new StreamContent(logoFile.OpenReadStream()), "file", logoFile.FileName);
+                await client.PostAsync($"api/companies/{id}/upload-logo", form);
+            }
+
+            return RedirectToAction(nameof(Edit), new { id });
+        }
     }
+
+    // DTO matching the shape returned by GET api/users/me/companies
+    public record MyCompanyItem(int CompanyId = 0, string? CompanyName = null, string? Title = null, int Role = 0);
 }
