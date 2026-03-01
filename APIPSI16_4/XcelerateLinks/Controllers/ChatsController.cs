@@ -137,8 +137,7 @@ namespace XcelerateLinks.Mvc.Controllers
             var created = await createResp.Content.ReadFromJsonAsync<APIPSI16.Models.Chat>();
             if (created == null) return RedirectToAction(nameof(Messages));
 
-            return RedirectToAction(nameof(Messages), new { chatId = created.ChatId });
-        }
+            return RedirectToAction(nameof(Messages), new { chatId = created.ChatId });        }
 
         [HttpGet]
         public async Task<IActionResult> Delete(int id)

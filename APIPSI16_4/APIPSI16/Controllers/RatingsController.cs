@@ -78,6 +78,7 @@ namespace APIPSI16.Controllers
                 {
                     RatingId = r.RatingId,
                     RatedByUserId = r.RatedByUserId,
+                    RatedByUserName = r.RatedByUser != null ? r.RatedByUser.Name : null,
                     RatedEntityId = r.RatedEntityId,
                     EntityType = r.EntityType,
                     Score = r.Score,

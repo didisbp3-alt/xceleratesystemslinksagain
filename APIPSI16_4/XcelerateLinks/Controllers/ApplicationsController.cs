@@ -74,26 +74,23 @@ namespace XcelerateLinks.Mvc.Controllers
             if (!await ValidateSessionAsync())
                 return RedirectToAction("Login", "Account");
 
+            // Application must always be tied to a specific opportunity
+            if (!opportunityId.HasValue)
+                return RedirectToAction("Index", "Opportunities");
+
             var model = new JobApplicationCreateViewModel
             {
-                Application = new JobApplicationData { OpportunityId = opportunityId ?? 0 }
+                Application = new JobApplicationData { OpportunityId = opportunityId.Value }
             };
 
-            if (opportunityId.HasValue)
+            var client = CreateAuthorizedClient();
+            var oppResp = await client.GetAsync($"api/opportunities/{opportunityId}");
+            if (oppResp.IsSuccessStatusCode)
             {
-                // Pre-load the specific opportunity if known
-                var client = CreateAuthorizedClient();
-                var oppResp = await client.GetAsync($"api/opportunities/{opportunityId}");
-                if (oppResp.IsSuccessStatusCode)
-                {
-                    var opp = await oppResp.Content.ReadFromJsonAsync<Opportunity>();
-                    ViewBag.Opportunity = opp;
-                }
+                var opp = await oppResp.Content.ReadFromJsonAsync<Opportunity>();
+                ViewBag.Opportunity = opp;
             }
-            else
-            {
-                model.Opportunities = await LoadOpportunitiesAsync();
-            }
+
             return View(model);
         }
 
@@ -106,7 +103,13 @@ namespace XcelerateLinks.Mvc.Controllers
 
             if (!ModelState.IsValid)
             {
-                model.Opportunities = await LoadOpportunitiesAsync();
+                if (model.Application.OpportunityId > 0)
+                {
+                    var oppClient = CreateAuthorizedClient();
+                    var oppR = await oppClient.GetAsync($"api/opportunities/{model.Application.OpportunityId}");
+                    if (oppR.IsSuccessStatusCode)
+                        ViewBag.Opportunity = await oppR.Content.ReadFromJsonAsync<Opportunity>();
+                }
                 return View(model);
             }
 
@@ -126,7 +129,13 @@ namespace XcelerateLinks.Mvc.Controllers
             if (!resp.IsSuccessStatusCode)
             {
                 ModelState.AddModelError("", await SafeReadStringAsync(resp) ?? "Unable to submit application.");
-                model.Opportunities = await LoadOpportunitiesAsync();
+                if (model.Application.OpportunityId > 0)
+                {
+                    var oppClient = CreateAuthorizedClient();
+                    var oppR = await oppClient.GetAsync($"api/opportunities/{model.Application.OpportunityId}");
+                    if (oppR.IsSuccessStatusCode)
+                        ViewBag.Opportunity = await oppR.Content.ReadFromJsonAsync<Opportunity>();
+                }
                 return View(model);
             }
 

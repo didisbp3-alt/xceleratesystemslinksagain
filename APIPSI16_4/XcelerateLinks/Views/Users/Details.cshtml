@@ -229,6 +229,35 @@
                     }
                 </div>
             </div>
+
+            @if (Model != null)
+            {
+                <div class="card mt-3" id="ratings-section">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <h3>Avaliações</h3>
+                        <span id="avg-rating-display"></span>
+                    </div>
+                    <div class="card-body">
+                        <div id="ratings-list"><p class="text-muted">A carregar avaliações...</p></div>
+                        @if (!isOwner && User.Identity?.IsAuthenticated == true)
+                        {
+                            <hr style="border-color:rgba(255,255,255,0.08); margin: 1rem 0;" />
+                            <h5 style="font-size:0.9rem; margin-bottom:0.75rem;">Deixa a tua avaliação</h5>
+                            <div id="rating-form-wrap">
+                                <div class="star-selector mb-2" id="star-selector">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        <span class="star-opt" data-val="@i" style="font-size:1.5rem; cursor:pointer; color:#a8b2c1;">★</span>
+                                    }
+                                </div>
+                                <textarea id="review-text" class="form-control mb-2" placeholder="Escreve uma avaliação (opcional)..." style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:inherit;border-radius:8px;padding:0.5rem 0.75rem;width:100%;resize:vertical;min-height:70px;"></textarea>
+                                <button id="submit-rating-btn" class="btn btn-sm" style="background:#0052CC;color:#fff;border:none;border-radius:20px;padding:0.4rem 1.2rem;" onclick="submitRating('@Model.UserId', 'User')">Enviar avaliação</button>
+                                <span id="rating-msg" style="font-size:0.82rem; margin-left:0.75rem;"></span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
         </div>
 
         <aside class="profile-aside">
@@ -265,3 +294,93 @@
         </aside>
     </div>
 </section>
+@section Scripts {
+<script>
+(function() {
+    var entityId = @(Model?.UserId ?? 0);
+    var entityType = 'User';
+    var selectedScore = 0;
+
+    function getToken() {
+        var m = document.cookie.split(';').map(function(c){return c.trim();}).find(function(c){return c.startsWith('ApiAccessToken=');});
+        return m ? decodeURIComponent(m.split('=')[1]) : (localStorage.getItem('token') || '');
+    }
+
+    function renderStars(score, max) {
+        var s = '';
+        for (var i = 1; i <= max; i++) s += (i <= score ? '★' : '☆');
+        return s;
+    }
+
+    function loadRatings() {
+        fetch('/api/ratings/entity/' + entityType + '/' + entityId, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        }).then(function(r){ return r.json(); }).then(function(ratings) {
+            var list = document.getElementById('ratings-list');
+            var avgEl = document.getElementById('avg-rating-display');
+            if (!ratings || ratings.length === 0) {
+                if (list) list.innerHTML = '<p class="text-muted">Ainda sem avaliações.</p>';
+                if (avgEl) avgEl.textContent = '';
+                return;
+            }
+            var avg = ratings.reduce(function(s,r){return s+r.score;},0)/ratings.length;
+            if (avgEl) avgEl.innerHTML = '<span style="color:#f59e0b;font-size:1.1rem;">' + renderStars(Math.round(avg), 5) + '</span> <small style="color:#a8b2c1;">' + avg.toFixed(1) + ' / 5 (' + ratings.length + ')</small>';
+            if (list) {
+                list.innerHTML = ratings.map(function(r) {
+                    var date = r.createdAt ? new Date(r.createdAt).toLocaleDateString('pt-PT') : '';
+                    return '<div style="padding:0.75rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">' +
+                        '<strong style="font-size:0.88rem;">' + (r.ratedByUserName || 'Utilizador') + '</strong>' +
+                        '<span style="color:#f59e0b;">' + renderStars(r.score, 5) + '</span></div>' +
+                        (r.review ? '<p style="font-size:0.85rem;color:#a8b2c1;margin:0;">' + r.review + '</p>' : '') +
+                        '<small style="color:#6b7280;">' + date + '</small></div>';
+                }).join('');
+            }
+        }).catch(function(){ });
+    }
+
+    // Star selector
+    var stars = document.querySelectorAll('#star-selector .star-opt');
+    stars.forEach(function(star) {
+        star.addEventListener('click', function() {
+            selectedScore = parseInt(this.dataset.val);
+            stars.forEach(function(s) {
+                s.style.color = parseInt(s.dataset.val) <= selectedScore ? '#f59e0b' : '#a8b2c1';
+            });
+        });
+        star.addEventListener('mouseover', function() {
+            var v = parseInt(this.dataset.val);
+            stars.forEach(function(s) {
+                s.style.color = parseInt(s.dataset.val) <= v ? '#f59e0b' : '#a8b2c1';
+            });
+        });
+        star.addEventListener('mouseout', function() {
+            stars.forEach(function(s) {
+                s.style.color = parseInt(s.dataset.val) <= selectedScore ? '#f59e0b' : '#a8b2c1';
+            });
+        });
+    });
+
+    window.submitRating = function(id, type) {
+        if (selectedScore < 1) { document.getElementById('rating-msg').textContent = 'Seleciona uma classificação.'; return; }
+        var review = document.getElementById('review-text').value.trim();
+        fetch('/api/ratings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+            body: JSON.stringify({ ratedEntityId: parseInt(id), entityType: type, score: selectedScore, review: review })
+        }).then(function(r) {
+            if (r.ok || r.status === 201) {
+                document.getElementById('rating-form-wrap').innerHTML = '<p style="color:#00DD55;">✓ Avaliação enviada!</p>';
+                loadRatings();
+            } else {
+                return r.text().then(function(t) {
+                    document.getElementById('rating-msg').textContent = t || 'Erro ao enviar avaliação.';
+                });
+            }
+        }).catch(function(){ document.getElementById('rating-msg').textContent = 'Erro de ligação.'; });
+    };
+
+    loadRatings();
+})();
+</script>
+}

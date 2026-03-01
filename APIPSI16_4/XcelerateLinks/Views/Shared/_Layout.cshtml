@@ -78,6 +78,7 @@
                             <a class="btn-filter">Admin</a>
                         }
 
+                        <button id="langToggle" class="btn-ghost" title="Switch language">🌐</button>
                         <button id="themeToggle" class="btn-ghost">🌙</button>
 
                         <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
@@ -87,6 +88,7 @@
                     }
                     else
                     {
+                        <button id="langToggle" class="btn-ghost" title="Switch language">🌐</button>
                         <button id="themeToggle" class="btn-ghost">🌙</button>
                         <a class="btn-ghost" asp-controller="Account" asp-action="Login">Entrar</a>
                         <a class="btn-cta" asp-controller="Account" asp-action="Register">Criar Conta</a>
@@ -220,6 +222,124 @@
         document.querySelectorAll('.stat-number[data-target]').forEach(function(el) {
             counterObserver.observe(el);
         });
+    });
+})();
+</script>
+<script>
+// ---- Language Toggle (PT / EN) ----
+(function() {
+    var translations = {
+        en: {
+            // Navigation
+            'Pesquisar oportunidades...': 'Search opportunities...',
+            'Admin': 'Admin',
+            'Sair': 'Sign out',
+            'Entrar': 'Sign in',
+            'Criar Conta': 'Create Account',
+            // Footer
+            'Sobre': 'About',
+            'Sobre nós': 'About us',
+            'Blog': 'Blog',
+            'Carreiras': 'Careers',
+            'Recursos': 'Resources',
+            'Documentação': 'Documentation',
+            'Suporte': 'Support',
+            'FAQ': 'FAQ',
+            'Legal': 'Legal',
+            'Privacidade': 'Privacy',
+            'Termos': 'Terms',
+            'Contacto': 'Contact',
+            'Segue-nos': 'Follow us',
+            'Todos os direitos reservados.': 'All rights reserved.',
+            // Common UI
+            'Conectar': 'Connect',
+            'Enviar Mensagem': 'Send Message',
+            'Editar Perfil': 'Edit Profile',
+            'Tornar-me Empregador': 'Become an Employer',
+            'Pedido em análise': 'Request under review',
+            'Empregador': 'Employer',
+            'Ver todos os utilizadores': 'View all users',
+            'Sem descrição pública.': 'No public description.',
+            'Sobre': 'About',
+            'Experiência': 'Experience',
+            'Formação': 'Education',
+            'Competências': 'Skills',
+            'Contacto': 'Contact',
+            'Avaliações': 'Reviews',
+            'Nenhuma experiência pública disponível.': 'No public experience available.',
+            'Nenhuma formação adicionada.': 'No education added.',
+            'Nenhuma competência listada.': 'No skills listed.',
+            'Oportunidades': 'Opportunities',
+            'Candidatar': 'Apply',
+            'Candidatar-me': 'Apply now',
+            'Submeter candidatura →': 'Submit application →',
+            'Cancelar': 'Cancel',
+            'Voltar às oportunidades': 'Back to opportunities',
+            // Chat
+            '💬 Mensagens': '💬 Messages',
+            '+ Nova': '+ New',
+            'Pesquisar conversas...': 'Search conversations...',
+            'Sem conversas': 'No conversations',
+            'Sem mensagens': 'No messages',
+            'Seleciona uma conversa para começar a mensagem': 'Select a conversation to start messaging',
+            'Ou cria uma nova conversa →': 'Or create a new conversation →',
+            'Escreve uma mensagem...': 'Write a message...',
+            'está a escrever...': 'is typing...',
+            '🟢 Online': '🟢 Online',
+            '⚪ A conectar...': '⚪ Connecting...',
+            'Utilizador': 'User',
+        },
+        pt: {}
+    };
+
+    var currentLang = localStorage.getItem('siteLang') || 'pt';
+    var originalTexts = new Map();
+
+    function applyLang(lang) {
+        if (lang === 'pt') {
+            // Restore originals
+            originalTexts.forEach(function(orig, node) {
+                node.textContent = orig;
+            });
+            originalTexts.clear();
+            document.documentElement.lang = 'pt-PT';
+        } else {
+            var dict = translations[lang] || {};
+            document.querySelectorAll('a, button, span, p, h1, h2, h3, h4, h5, label, th, td, div.conv-last, div.conv-name, div.msg-sender-name, input[placeholder], textarea[placeholder]').forEach(function(el) {
+                // Handle placeholder attributes
+                if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.placeholder) {
+                    var key = el.placeholder;
+                    if (dict[key] && !originalTexts.has(el)) {
+                        originalTexts.set(el, el.placeholder);
+                        el.placeholder = dict[key];
+                    }
+                    return;
+                }
+                // Handle text nodes
+                if (el.children.length === 0 && el.textContent) {
+                    var text = el.textContent.trim();
+                    if (dict[text]) {
+                        if (!originalTexts.has(el)) originalTexts.set(el, el.textContent);
+                        el.textContent = dict[text];
+                    }
+                }
+            });
+            document.documentElement.lang = 'en';
+        }
+        var btn = document.getElementById('langToggle');
+        if (btn) btn.textContent = lang === 'pt' ? '🌐 EN' : '🌐 PT';
+        localStorage.setItem('siteLang', lang);
+        currentLang = lang;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        applyLang(currentLang);
+        var btn = document.getElementById('langToggle');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                applyLang(currentLang === 'pt' ? 'en' : 'pt');
+            });
+        }
     });
 })();
 </script>

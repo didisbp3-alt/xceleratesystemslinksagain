@@ -6,6 +6,7 @@ namespace APIPSI16.Models.DTOs
     {
         public int RatingId { get; set; }
         public int RatedByUserId { get; set; }
+        public string? RatedByUserName { get; set; }
         public int RatedEntityId { get; set; }
         public string EntityType { get; set; } = null!; // "User", "Company"
         public int Score { get; set; } // 1-5

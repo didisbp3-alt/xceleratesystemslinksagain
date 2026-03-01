@@ -199,31 +199,49 @@ namespace APIPSI16.Controllers
             var currentUserId = GetCurrentUserId();
             if (!currentUserId.HasValue) return Unauthorized();
 
-            var chats = await _context.ChatUsers
+            var chatEntries = await _context.ChatUsers
                 .Where(cu => cu.UserId == currentUserId.Value)
                 .Include(cu => cu.Chat)
-                .ThenInclude(c => c.ChatMessages)
-                .ThenInclude(cm => cm.SenderUser)
-                .Select(cu => new ChatListDTO
+                    .ThenInclude(c => c.ChatUsers)
+                        .ThenInclude(cu2 => cu2.User)
+                .Include(cu => cu.Chat)
+                    .ThenInclude(c => c.ChatMessages)
+                        .ThenInclude(cm => cm.SenderUser)
+                .ToListAsync();
+
+            var chats = chatEntries.Select(cu =>
+            {
+                // For Direct chats with exactly 2 participants, show the OTHER user's name
+                string chatName = cu.Chat.Type;
+                if (cu.Chat.Type == "Direct")
+                {
+                    var otherUser = cu.Chat.ChatUsers
+                        .FirstOrDefault(u => u.UserId != currentUserId.Value)?.User;
+                    if (otherUser != null)
+                        chatName = otherUser.Name;
+                }
+
+                var lastMsg = cu.Chat.ChatMessages
+                    .OrderByDescending(cm => cm.CreatedAt)
+                    .FirstOrDefault();
+
+                return new ChatListDTO
                 {
                     ChatId = cu.ChatId,
-                    ChatName = cu.Chat.Type, // Use Type as ChatName
-                    UnreadCount = cu.Chat.ChatMessages.Count(cm => 
+                    ChatName = chatName,
+                    UnreadCount = cu.Chat.ChatMessages.Count(cm =>
                         cm.SenderUserId != currentUserId.Value && cm.ReadAt == null),
-                    LastMessage = cu.Chat.ChatMessages
-                        .OrderByDescending(cm => cm.CreatedAt)
-                        .Select(cm => new ChatMessageDTO
-                        {
-                            MessageId = cm.MessageId,
-                            ChatId = cm.ChatId,
-                            SenderUserId = cm.SenderUserId,
-                            SenderName = cm.SenderUser.Name,
-                            MessageText = cm.MessageText,
-                            CreatedAt = cm.CreatedAt
-                        })
-                        .FirstOrDefault()
-                })
-                .ToListAsync();
+                    LastMessage = lastMsg == null ? null : new ChatMessageDTO
+                    {
+                        MessageId = lastMsg.MessageId,
+                        ChatId = lastMsg.ChatId,
+                        SenderUserId = lastMsg.SenderUserId,
+                        SenderName = lastMsg.SenderUser?.Name,
+                        MessageText = lastMsg.MessageText,
+                        CreatedAt = lastMsg.CreatedAt
+                    }
+                };
+            }).ToList();
 
             return Ok(chats);
         }
@@ -271,6 +289,48 @@ namespace APIPSI16.Controllers
 
             if (!dto.ParticipantIds.Contains(currentUserId.Value))
                 dto.ParticipantIds.Insert(0, currentUserId.Value);
+
+            // For direct chats (2 participants), return existing chat if one already exists
+            if (dto.ParticipantIds.Count == 2)
+            {
+                var ids = dto.ParticipantIds.ToHashSet();
+                var existingChat = await _context.Chats
+                    .Where(c => c.Type == "Direct")
+                    .Where(c => _context.ChatUsers
+                        .Where(cu => cu.ChatId == c.ChatId)
+                        .Select(cu => cu.UserId)
+                        .All(uid => ids.Contains(uid))
+                        && _context.ChatUsers.Count(cu => cu.ChatId == c.ChatId) == 2)
+                    .FirstOrDefaultAsync();
+
+                if (existingChat != null)
+                {
+                    var existingChatUsers = await _context.ChatUsers
+                        .Where(cu => cu.ChatId == existingChat.ChatId)
+                        .Include(cu => cu.User)
+                        .Select(cu => new ChatUserDetailDTO
+                        {
+                            ChatUserId = cu.ChatUserId,
+                            ChatId = cu.ChatId,
+                            UserId = cu.UserId,
+                            UserName = cu.User.Name,
+                            JoinedAt = cu.JoinedAt,
+                            Role = cu.Role
+                        })
+                        .ToListAsync();
+
+                    var existingResult = new ChatDetailDTO
+                    {
+                        ChatId = existingChat.ChatId,
+                        Type = existingChat.Type,
+                        CreatedAt = existingChat.CreatedAt,
+                        CreatedByUserId = existingChat.CreatedByUserId,
+                        ChatUsers = existingChatUsers,
+                        ChatMessages = new List<ChatMessageDTO>()
+                    };
+                    return Ok(existingResult);
+                }
+            }
 
             var chat = new Chat
             {
