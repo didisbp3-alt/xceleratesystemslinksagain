@@ -71,22 +71,19 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="JobPreference" class="form-label">Job Preference</label>
-                            <select asp-for="JobPreference" class="form-select searchable-select" id="jobPrefSelect">
-                                <option value="">— Select job role —</option>
+                            <label class="form-label">Preferências de cargo</label>
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:0.75rem;max-height:180px;overflow-y:auto;">
                                 @foreach (var j in (ViewBag.JobRoles as IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem> ?? Enumerable.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>()))
                                 {
-                                    @if (Model.JobPreference == j.Id)
-                                    {
-                                        <option value="@j.Id" selected>@j.Name</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="@j.Id">@j.Name</option>
-                                    }
+                                    <label style="display:flex;align-items:center;gap:0.5rem;padding:0.2rem 0;cursor:pointer;font-size:0.88rem;">
+                                        <input type="checkbox" name="SelectedJobRoleIds" value="@j.Id" style="accent-color:#0052CC;"
+                                            @(Model.JobPreference == j.Id ? "checked" : "") />
+                                        @j.Name
+                                    </label>
                                 }
-                            </select>
-                            <span asp-validation-for="JobPreference" class="text-danger"></span>
+                            </div>
+                            <input type="hidden" asp-for="JobPreference" id="jobPrefHidden" />
+                            <small class="text-muted">Podes escolher mais do que uma área.</small>
                         </div>
 
                         <div class="mb-3">
@@ -303,6 +300,16 @@
                 opt.style.display = opt.text.toLowerCase().includes(q) ? '' : 'none';
             });
         });
+    });
+    </script>
+    <script>
+    // Collect multi-select job preferences before form submit
+    document.getElementById('profileForm').addEventListener('submit', function() {
+        var checked = Array.from(document.querySelectorAll('input[name="SelectedJobRoleIds"]:checked')).map(function(el){ return el.value; });
+        // Keep just the first selected ID in JobPreference (for backward compatibility with the int field)
+        if (checked.length > 0) {
+            document.getElementById('jobPrefHidden').value = checked[0];
+        }
     });
     </script>
 }

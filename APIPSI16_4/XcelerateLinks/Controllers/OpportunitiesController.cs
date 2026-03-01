@@ -260,6 +260,18 @@ namespace XcelerateLinks.Mvc.Controllers
                     ViewBag.Users = Array.Empty<APIPSI16.Models.DTOs.UserDTO>();
                 }
             }
+
+            // Job roles
+            var jobRolesResp = await client.GetAsync("api/users/lookups/jobroles");
+            if (jobRolesResp.IsSuccessStatusCode)
+            {
+                var jr = await jobRolesResp.Content.ReadFromJsonAsync<IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>>();
+                ViewBag.JobRoles = jr ?? Array.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>();
+            }
+            else
+            {
+                ViewBag.JobRoles = Array.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>();
+            }
         }
 
         public record CompanyDropItem(int CompanyId = 0, string? CompanyName = null);

@@ -297,11 +297,83 @@
             'Nenhuma competência listada.': 'No skills listed.',
             'Candidatar': 'Apply',
             'Cancelar': 'Cancel',
+            'Guardar': 'Save',
+            'Guardar alterações': 'Save changes',
+            'Publicar': 'Publish',
+            'Criar': 'Create',
+            'Eliminar': 'Delete',
+            'Editar': 'Edit',
+            'Ver': 'View',
+            'Voltar': 'Back',
+            'Pesquisar': 'Search',
+            'Filtrar': 'Filter',
+            // Opportunities
+            'Oportunidades': 'Opportunities',
+            'Criar Oportunidade': 'Create Opportunity',
+            '+ Criar Oportunidade': '+ Create Opportunity',
+            'Criar oportunidade': 'Create opportunity',
+            'Título da vaga *': 'Job title *',
+            'Empresa *': 'Company *',
+            'Localização': 'Location',
+            'Tipo de emprego': 'Employment type',
+            'Modalidade': 'Work mode',
+            'Nível de senioridade': 'Seniority level',
+            'Áreas de trabalho': 'Job areas',
+            'Full-Time': 'Full-Time',
+            'Part-Time': 'Part-Time',
+            'Contract': 'Contract',
+            'Internship': 'Internship',
+            'Freelance': 'Freelance',
+            'No local': 'On-site',
+            'Híbrido': 'Hybrid',
+            'Remoto': 'Remote',
+            'Junior': 'Junior',
+            'Mid-level': 'Mid-level',
+            'Senior': 'Senior',
+            'Lead': 'Lead',
+            'Manager': 'Manager',
+            'Seleciona...': 'Select...',
+            'Seleciona uma empresa...': 'Select a company...',
+            // Companies
+            'Empresas': 'Companies',
+            'Criar Empresa': 'Create Company',
+            'Empresa': 'Company',
+            'Setor / Indústria': 'Industry',
+            'Nome da empresa *': 'Company name *',
+            'Pesquisar empresas...': 'Search companies...',
+            'Editar empresa': 'Edit company',
+            // Users
+            'Utilizadores': 'Users',
+            'Rede': 'Network',
+            'Nome completo': 'Full name',
+            'Sobre mim': 'About me',
+            // Auth
+            'Email': 'Email',
+            'Password': 'Password',
+            'Palavra-passe': 'Password',
+            'Confirmar password': 'Confirm password',
+            // Notifications
+            'Notificações': 'Notifications',
+            'Sem notificações': 'No notifications',
             // Chat
             'Pesquisar conversas...': 'Search conversations...',
             'Sem conversas': 'No conversations',
             'Sem mensagens': 'No messages',
             'Escreve uma mensagem...': 'Write a message...',
+            'Nova conversa': 'New conversation',
+            // General
+            'Sim': 'Yes',
+            'Não': 'No',
+            'Confirmar': 'Confirm',
+            'Fechar': 'Close',
+            'Abrir': 'Open',
+            'Novo': 'New',
+            'Nova': 'New',
+            'Anterior': 'Previous',
+            'Próximo': 'Next',
+            'Página': 'Page',
+            'de': 'of',
+            'Resultados': 'Results',
         },
         pt: {}
     };
@@ -323,14 +395,29 @@
             document.documentElement.lang = 'pt-PT';
         } else {
             var dict = translations[lang] || {};
-            document.querySelectorAll('a, button, span, p, h1, h2, h3, h4, h5, label, th, td').forEach(function(el) {
+            document.querySelectorAll('a, button, span, p, h1, h2, h3, h4, h5, h6, label, th, td, li, option, small, strong, em, div.form-label, .form-label-styled').forEach(function(el) {
                 // Skip the lang/theme toggle buttons themselves
                 if (el.id === 'langToggle' || el.id === 'themeToggle') return;
-                if (el.children.length === 0 && el.textContent) {
-                    var text = el.textContent.trim();
-                    if (dict[text]) {
-                        if (!originalTexts.has(el)) originalTexts.set(el, el.textContent);
+                var text;
+                if (el.children.length === 0) {
+                    text = el.textContent.trim();
+                } else {
+                    // For elements with children, only match if direct text nodes form the full key
+                    text = Array.from(el.childNodes)
+                        .filter(function(n){ return n.nodeType === 3; })
+                        .map(function(n){ return n.textContent; })
+                        .join('').trim();
+                }
+                if (text && dict[text]) {
+                    if (!originalTexts.has(el)) originalTexts.set(el, el.textContent);
+                    if (el.children.length === 0) {
                         el.textContent = dict[text];
+                    } else {
+                        Array.from(el.childNodes).forEach(function(n) {
+                            if (n.nodeType === 3 && n.textContent.trim() === text) {
+                                n.textContent = dict[text];
+                            }
+                        });
                     }
                 }
             });

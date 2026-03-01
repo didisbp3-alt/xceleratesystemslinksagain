@@ -14,8 +14,12 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<TokenHandler>();
 
+var mvcConnStr = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Server=sql.bsite.net\\MSSQL2016;Database=xcleratesystemslinks_SampleDB;User Id=xcleratesystemslinks_SampleDB;Password=XcelerateDB;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=True;";
+
 builder.Services.AddDbContext<xcleratesystemslinks_SampleDBContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Server=sql.bsite.net\\MSSQL2016;Database=xcleratesystemslinks_SampleDB;User Id=xcleratesystemslinks_SampleDB;Password=XcelerateDB;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=True;")));
+    options.UseSqlServer(mvcConnStr));
 
 builder.Services.AddScoped<ISessionService, SessionService>();
 

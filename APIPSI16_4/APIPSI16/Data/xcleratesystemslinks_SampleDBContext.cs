@@ -271,6 +271,10 @@ public partial class xcleratesystemslinks_SampleDBContext : DbContext
             entity.Property(e => e.Location).HasMaxLength(200);
             entity.Property(e => e.CreatorId).HasColumnName("CreatorID");
             entity.Property(e => e.CompanyId).HasColumnName("CompanyID");
+            entity.Property(e => e.RequiredJobRoleIds)
+                .HasMaxLength(500)
+                .HasColumnName("RequiredJobRoleIds")
+                .HasDefaultValue(null);
 
             entity.HasOne(d => d.Company)
                 .WithMany(p => p.Opportunities)

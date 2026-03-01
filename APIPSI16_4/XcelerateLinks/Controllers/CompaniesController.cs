@@ -221,7 +221,10 @@ namespace XcelerateLinks.Mvc.Controllers
             {
                 var client = CreateAuthorizedClient();
                 using var form = new MultipartFormDataContent();
-                form.Add(new StreamContent(logoFile.OpenReadStream()), "file", logoFile.FileName);
+                var streamContent = new StreamContent(logoFile.OpenReadStream());
+                streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                    string.IsNullOrEmpty(logoFile.ContentType) ? "application/octet-stream" : logoFile.ContentType);
+                form.Add(streamContent, "file", logoFile.FileName);
                 await client.PostAsync($"api/companies/{id}/upload-logo", form);
             }
 

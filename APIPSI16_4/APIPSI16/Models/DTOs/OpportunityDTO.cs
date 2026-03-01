@@ -11,5 +11,6 @@ namespace APIPSI16.DTOs
         public byte? SeniorityLevel { get; set; }
         public string? Location { get; set; }
         public byte? RemoteOption { get; set; }
+        public string? RequiredJobRoleIds { get; set; }
     }
 }

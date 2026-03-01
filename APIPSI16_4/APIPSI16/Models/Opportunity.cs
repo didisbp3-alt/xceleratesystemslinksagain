@@ -21,6 +21,9 @@ public partial class Opportunity
 
     public byte? RemoteOption { get; set; }
 
+    /// <summary>Comma-separated JobRoleId values (e.g. "1,3,7")</summary>
+    public string? RequiredJobRoleIds { get; set; }
+
     public virtual Company? Company { get; set; }
 
     public virtual User? Creator { get; set; }

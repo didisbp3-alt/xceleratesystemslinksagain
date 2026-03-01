@@ -126,7 +126,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("SenderUserId");
 
-                    b.ToTable("ChatMessages");
+                    b.ToTable("ChatMessages", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.ChatUser", b =>
@@ -162,7 +162,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "ChatId", "UserId" }, "UQ_Chat_User")
                         .IsUnique();
 
-                    b.ToTable("ChatUsers");
+                    b.ToTable("ChatUsers", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Company", b =>
@@ -202,7 +202,7 @@ namespace APIPSI16.Migrations
                     b.HasKey("CompanyId")
                         .HasName("PK__Companie__2D971CAC7600FB81");
 
-                    b.ToTable("Companies");
+                    b.ToTable("Companies", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.CompanyMember", b =>
@@ -240,7 +240,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "CompanyId", "UserId" }, "UQ_Company_User")
                         .IsUnique();
 
-                    b.ToTable("CompanyMembers");
+                    b.ToTable("CompanyMembers", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Connection", b =>
@@ -274,7 +274,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "RequesterUserId", "AddresseeUserId" }, "UQ__Connecti__D964BF246B6D1B80")
                         .IsUnique();
 
-                    b.ToTable("Connections");
+                    b.ToTable("Connections", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.EmployerCandidateHistory", b =>
@@ -368,7 +368,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("JobApplicationId");
 
-                    b.ToTable("InterviewRounds");
+                    b.ToTable("InterviewRounds", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.JobApplication", b =>
@@ -411,7 +411,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("JobApplications");
+                    b.ToTable("JobApplications", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.JobRole", b =>
@@ -433,7 +433,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "Name" }, "UQ__JobRoles__737584F68DB4257F")
                         .IsUnique();
 
-                    b.ToTable("JobRoles");
+                    b.ToTable("JobRoles", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Nationality", b =>
@@ -462,7 +462,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "Name" }, "UQ__National__737584F6FEC464F0")
                         .IsUnique();
 
-                    b.ToTable("Nationalities");
+                    b.ToTable("Nationalities", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Notification", b =>
@@ -502,7 +502,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Opportunity", b =>
@@ -547,6 +547,11 @@ namespace APIPSI16.Migrations
                     b.Property<byte?>("RemoteOption")
                         .HasColumnType("tinyint");
 
+                    b.Property<string>("RequiredJobRoleIds")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("RequiredJobRoleIds");
+
                     b.Property<byte?>("SeniorityLevel")
                         .HasColumnType("tinyint");
 
@@ -561,7 +566,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("CreatorId");
 
-                    b.ToTable("Opportunities");
+                    b.ToTable("Opportunities", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Post", b =>
@@ -594,7 +599,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Posts");
+                    b.ToTable("Posts", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.PostComment", b =>
@@ -644,7 +649,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PostComments");
+                    b.ToTable("PostComments", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.PostReaction", b =>
@@ -677,7 +682,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "PostId", "UserId", "ReactionType" }, "UX_Post_User_Reaction")
                         .IsUnique();
 
-                    b.ToTable("PostReactions");
+                    b.ToTable("PostReactions", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.ProfileEducation", b =>
@@ -718,7 +723,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProfileEducations");
+                    b.ToTable("ProfileEducations", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.ProfileExperience", b =>
@@ -763,7 +768,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProfileExperiences");
+                    b.ToTable("ProfileExperiences", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Rating", b =>
@@ -797,7 +802,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("RatedByUserId");
 
-                    b.ToTable("Ratings");
+                    b.ToTable("Ratings", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Session", b =>
@@ -858,7 +863,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "Name" }, "UQ__Skills__737584F61738EFED")
                         .IsUnique();
 
-                    b.ToTable("Skills");
+                    b.ToTable("Skills", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.SkillEndorsement", b =>
@@ -888,7 +893,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "UserSkillId", "EndorserUserId" }, "UX_Endorse")
                         .IsUnique();
 
-                    b.ToTable("SkillEndorsements");
+                    b.ToTable("SkillEndorsements", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.User", b =>
@@ -943,7 +948,7 @@ namespace APIPSI16.Migrations
                     b.HasKey("UserId")
                         .HasName("PK__Users__1788CCACFE71B925");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.UserJobPreference", b =>
@@ -973,7 +978,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "UserId", "JobRoleId" }, "UQ_User_JobRole")
                         .IsUnique();
 
-                    b.ToTable("UserJobPreferences");
+                    b.ToTable("UserJobPreferences", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.UserSkill", b =>
@@ -1006,7 +1011,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "UserId", "SkillId" }, "UX_User_Skill")
                         .IsUnique();
 
-                    b.ToTable("UserSkills");
+                    b.ToTable("UserSkills", (string)null);
                 });
 
             modelBuilder.Entity("APIPSI16.Models.AuditLog", b =>

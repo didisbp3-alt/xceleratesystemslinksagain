@@ -4,6 +4,7 @@
     ViewData["Title"] = "Criar oportunidade";
     var companies = ViewBag.Companies as IEnumerable<XcelerateLinks.Mvc.Controllers.OpportunitiesController.CompanyDropItem> ?? Enumerable.Empty<XcelerateLinks.Mvc.Controllers.OpportunitiesController.CompanyDropItem>();
     var users = ViewBag.Users as IEnumerable<APIPSI16.Models.DTOs.UserDTO> ?? Enumerable.Empty<APIPSI16.Models.DTOs.UserDTO>();
+    var jobRoles = ViewBag.JobRoles as IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem> ?? Enumerable.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>();
     var isEmployer = ViewBag.IsEmployer == true;
     var isAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "0";
     var employmentTypes = new Dictionary<byte, string> { {1,"Full-Time"},{2,"Part-Time"},{3,"Contract"},{4,"Internship"},{5,"Freelance"} };
@@ -118,6 +119,31 @@
                     </select>
                 </div>
 
+                <div class="mb-4">
+                    <label class="form-label form-label-styled">Áreas de trabalho</label>
+                    <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:0.75rem;max-height:200px;overflow-y:auto;">
+                        @if (!jobRoles.Any())
+                        {
+                            <p style="font-size:0.82rem;color:#a8b2c1;margin:0;">Sem áreas disponíveis</p>
+                        }
+                        else
+                        {
+                            var selectedRoleIds = new HashSet<string>(
+                                (Model?.RequiredJobRoleIds ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries));
+                            @foreach (var jr in jobRoles)
+                            {
+                                <label style="display:flex;align-items:center;gap:0.5rem;padding:0.25rem 0;cursor:pointer;font-size:0.88rem;">
+                                    <input type="checkbox" name="SelectedJobRoleIds" value="@jr.Id"
+                                        style="accent-color:#0052CC;"
+                                        @(selectedRoleIds.Contains(jr.Id.ToString()) ? "checked" : "") />
+                                    @jr.Name
+                                </label>
+                            }
+                        }
+                    </div>
+                    <input type="hidden" asp-for="RequiredJobRoleIds" id="reqJobRoleIds" />
+                </div>
+
                 <div class="d-flex gap-3 align-items-center">
                     <button type="submit" class="btn-save-opp">Criar oportunidade</button>
                     <a asp-action="Index" class="btn-cancel-opp">Cancelar</a>
@@ -127,4 +153,12 @@
     </div>
 </div>
 
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+document.querySelector('form').addEventListener('submit', function() {
+    var checked = Array.from(document.querySelectorAll('input[name="SelectedJobRoleIds"]:checked')).map(function(el){ return el.value; });
+    document.getElementById('reqJobRoleIds').value = checked.join(',');
+});
+</script>
+}

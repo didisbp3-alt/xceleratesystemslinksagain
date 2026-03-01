@@ -82,7 +82,8 @@ namespace APIPSI16.Controllers
                     EmploymentType = o.EmploymentType,
                     SeniorityLevel = o.SeniorityLevel,
                     RemoteOption = o.RemoteOption,
-                    CompanyId = o.CompanyId
+                    CompanyId = o.CompanyId,
+                    RequiredJobRoleIds = o.RequiredJobRoleIds
                 })
                 .ToListAsync();
 
