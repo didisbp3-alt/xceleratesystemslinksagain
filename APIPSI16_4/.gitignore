@@ -1,0 +1,6 @@
+project_extracted/
+APIPSI16 4.zip
+**/bin/
+**/obj/
+**/.vs/
+**/*.user

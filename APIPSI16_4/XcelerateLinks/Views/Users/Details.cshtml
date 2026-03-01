@@ -1,0 +1,267 @@
+@model APIPSI16.Models.DTOs.UserProfileDTO
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = Model?.Name ?? "Perfil";
+    var displayName = Model?.Name ?? "Usuário";
+    var avatarUrl = Model?.ProfilePictureUrl;
+    // When you add a BannerUrl property to UserProfileDTO, update this line:
+    var bannerUrl = Model?.BannerUrl;
+    var location = ""; // add when you have a location property
+    var currentUserId = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    bool isOwner = false;
+    if (!string.IsNullOrEmpty(currentUserId) && Model != null)
+    {
+        if (int.TryParse(currentUserId, out var id)) isOwner = id == Model.UserId;
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+}
+
+<section class="profile-banner" aria-hidden="false">
+    <div class="banner-img-wrapper">
+        @if (!string.IsNullOrEmpty(bannerUrl))
+        {
+            <img src="@bannerUrl" alt="Banner for @displayName" class="banner-img" />
+        }
+        else
+        {
+            <div class="banner-placeholder">
+                <div class="banner-gradient"></div>
+            </div>
+        }
+    </div>
+</section>
+
+<section class="profile-container container">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success mt-3" style="animation:slideDown 0.3s ease both;">@TempData["SuccessMessage"]</div>
+    }
+    <div class="profile-top">
+        <div class="profile-card">
+            <div class="profile-avatar">
+                @if (!string.IsNullOrEmpty(avatarUrl))
+                {
+                    <img src="@avatarUrl" alt="@displayName" class="avatar-img" />
+                }
+                else
+                {
+                    <div class="avatar-initials">
+                        @(
+                                            (displayName ?? "U").Split(' ', StringSplitOptions.RemoveEmptyEntries) is var parts
+                                            ? (parts.Length == 1 ? parts[0].Substring(0, 1).ToUpperInvariant() : (parts[0].Substring(0, 1) + parts[^1].Substring(0, 1)).ToUpperInvariant())
+                                            : "U")
+                </div>
+                                }
+            </div>
+
+            <div class="profile-summary">
+                <h1 class="profile-name">@displayName</h1>
+
+                <div class="profile-headline">
+                    @if (!string.IsNullOrWhiteSpace(Model?.ProfileBio))
+                    {
+                        @Html.Raw(System.Net.WebUtility.HtmlEncode(Model.ProfileBio).Replace("\n", "<br/>"))
+                    }
+                    else
+                    {
+                        <span class="text-muted">Sem descrição pública.</span>
+                    }
+                </div>
+
+                <div class="profile-meta">
+                    @if (!string.IsNullOrEmpty(location))
+                    {
+                        <span class="meta-item">📍 @location</span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model?.Email))
+                    {
+                        <span class="meta-item">✉️ <a class="meta-link" href="mailto:@Model.Email">@Model.Email</a></span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model?.PhoneNumber))
+                    {
+                        <span class="meta-item">📞 <a class="meta-link" href="tel:@Model.PhoneNumber">@Model.PhoneNumber</a></span>
+                    }
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                @{
+                    var viewerRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                    var isViewerAdmin = viewerRole == "0";
+                    var profileRole = Model?.Role ?? 1;
+                }
+                @if (isOwner)
+                {
+                    <a class="btn btn-outline" href="@Url.Action("Edit", "Users", new { id = Model.UserId })">Editar Perfil</a>
+                    @if (profileRole == 1) // Regular user – show request button
+                    {
+                        <a class="btn btn-primary" href="@Url.Action("RequestEmployer", "Users")">🏢 Tornar-me Empregador</a>
+                    }
+                    else if (profileRole == 3) // Pending
+                    {
+                        <span class="btn btn-outline" style="opacity:0.6;cursor:default;">⏳ Pedido em análise</span>
+                    }
+                    else if (profileRole == 2)
+                    {
+                        <span class="btn btn-outline" style="border-color:#00DD55;color:#00DD55;cursor:default;">✓ Empregador</span>
+                    }
+                }
+                else
+                {
+                    <form method="post" asp-controller="Connections" asp-action="Connect" class="d-inline">
+                        <input type="hidden" name="targetUserId" value="@Model.UserId" />
+                        <button class="btn btn-primary" type="submit">Conectar</button>
+                    </form>
+                    <a class="btn btn-outline" href="@Url.Action("Create", "Chats", new { withUserId = Model.UserId })">💬 Enviar Mensagem</a>
+
+                    @if (isViewerAdmin && profileRole == 3) // Admin can approve/reject
+                    {
+                        <form method="post" asp-action="ApproveEmployer" asp-route-id="@Model.UserId" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success btn-sm">✓ Aprovar Empregador</button>
+                        </form>
+                        <form method="post" asp-action="RejectEmployer" asp-route-id="@Model.UserId" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-danger btn-sm">✗ Rejeitar</button>
+                        </form>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-body">
+        <div class="profile-main">
+            <div class="card about-card">
+                <div class="card-header"><h3>Sobre</h3></div>
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(Model?.ProfileBio))
+                    {
+                        <p>@Model.ProfileBio</p>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Este utilizador ainda não adicionou uma descrição.</p>
+                    }
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header"><h3>Experiência</h3></div>
+                <div class="card-body">
+                    @if (Model?.Experiences != null && Model.Experiences.Any())
+                    {
+                        <ul class="timeline">
+                            @foreach (var exp in Model.Experiences)
+                            {
+                                <li>
+                                    <div class="timeline-title">@exp.JobTitle @if(!string.IsNullOrEmpty(exp.CompanyName)){
+                                    <span class="muted"> — @exp.CompanyName</span>
+                                }
+    </div>
+                                <div class="timeline-sub">@((exp.StartDate.HasValue) ? exp.StartDate.Value.ToString("yyyy") : "—") - @(exp.EndDate.HasValue? exp.EndDate.Value.ToString("yyyy") : "Atualmente")</div>
+                                @if (!string.IsNullOrWhiteSpace(exp.Description))
+                                {
+                                    <p class="mt-2">@exp.Description</p>
+                                }
+                            </li>
+                        }
+                    </ul>
+                                        }
+                                        else
+                    {
+                        <p class="text-muted">Nenhuma experiência pública disponível.</p>
+                    }
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header"><h3>Formação</h3></div>
+                <div class="card-body">
+                    @if (Model?.Educations != null && Model.Educations.Any())
+                    {
+                        <ul class="timeline">
+                            @foreach (var edu in Model.Educations)
+                            {
+                                <li>
+                                    <div class="timeline-title">@edu.Degree @if(!string.IsNullOrEmpty(edu.Institution)){
+                                    <span class="muted"> — @edu.Institution</span>
+                                }
+    </div>
+                                <div class="timeline-sub">@((edu.StartDate.HasValue) ? edu.StartDate.Value.ToString("yyyy") : "—") - @(edu.EndDate.HasValue? edu.EndDate.Value.ToString("yyyy") : "—")</div>
+                                @if (!string.IsNullOrWhiteSpace(edu.FieldOfStudy))
+                                {
+                                    <p class="mt-2">@edu.FieldOfStudy</p>
+                                }
+                            </li>
+                        }
+                    </ul>
+                                        }
+                                        else
+                    {
+                        <p class="text-muted">Nenhuma formação adicionada.</p>
+                    }
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header"><h3>Competências</h3></div>
+                <div class="card-body">
+                    @if (Model?.Skills != null && Model.Skills.Any())
+                    {
+                        <div class="skill-list">
+                            @foreach (var s in Model.Skills)
+                            {
+                                <span class="skill-pill">@s.Name @if(s.EndorsementCount > 0){
+                                <small class="text-muted"> · @s.EndorsementCount</small>
+                            }
+    </span>
+                        }
+                    </div>
+                                        }
+                                        else
+                    {
+                        <p class="text-muted">Nenhuma competência listada.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <aside class="profile-aside">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stat-row">
+                        <div>
+                            <div class="stat-number">@Model?.Experiences?.Count ?? 0</div>
+                            <div class="stat-label">Experiências</div>
+                        </div>
+                        <div>
+                            <div class="stat-number">@Model?.Educations?.Count ?? 0</div>
+                            <div class="stat-label">Formação</div>
+                        </div>
+                    </div>
+
+                    <a href="@Url.Action("Index", "Users")" class="btn btn-outline btn-block mt-3">Ver todos os utilizadores</a>
+                </div>
+            </div>
+
+            <div class="card contact-card mt-3">
+                <div class="card-header"><h4>Contacto</h4></div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model?.Email))
+                    {
+                        <div class="contact-item">✉️ <a href="mailto:@Model.Email">@Model.Email</a></div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model?.PhoneNumber))
+                    {
+                        <div class="contact-item">📞 <a href="tel:@Model.PhoneNumber">@Model.PhoneNumber</a></div>
+                    }
+                </div>
+            </div>
+        </aside>
+    </div>
+</section>

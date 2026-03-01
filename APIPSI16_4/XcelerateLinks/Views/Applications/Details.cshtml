@@ -1,0 +1,167 @@
+@model APIPSI16.Models.JobApplication
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Candidatura";
+
+    var statusSteps = new[]
+    {
+        (byte)0, (byte)1, (byte)2, (byte)3, (byte)4
+    };
+    var statusLabels = new Dictionary<byte, (string label, string icon, string color)>
+    {
+        { 0, ("Enviada", "📤", "#6b7280") },
+        { 1, ("Em análise", "🔍", "#0052CC") },
+        { 2, ("Entrevista", "🎤", "#7c3aed") },
+        { 3, ("Oferta", "🎉", "#059669") },
+        { 4, ("Aceite", "✅", "#10b981") },
+        { 5, ("Recusada", "❌", "#ef4444") }
+    };
+    var isRejected = Model.Status == 5;
+    var currentStep = Array.IndexOf(statusSteps, Model.Status);
+    var myId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    var isOwner = myId == Model.UserId.ToString();
+    var role = User.FindFirst(ClaimTypes.Role)?.Value;
+    var isAdmin = role == "0";
+}
+
+<style>
+    .app-detail-container { max-width: 700px; margin: 0 auto; padding: 2rem 0; }
+    .app-detail-card {
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px; padding: 2rem; margin-bottom: 1.25rem;
+    }
+    .app-job-header { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1.5rem; }
+    .app-job-logo {
+        width: 64px; height: 64px; border-radius: 14px; flex-shrink: 0;
+        background: linear-gradient(135deg,rgba(0,82,204,0.2),rgba(0,221,85,0.1));
+        display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
+    }
+    .app-job-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.2rem; }
+    .app-job-company { font-size: 0.9rem; color: var(--dark-text-muted,#a8b2c1); }
+
+    .app-status-badge {
+        display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 1rem;
+        border-radius: 30px; font-size: 0.88rem; font-weight: 600; border: 1px solid;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Progress stepper */
+    .stepper { display: flex; gap: 0; margin-bottom: 2rem; }
+    .step {
+        flex: 1; display: flex; flex-direction: column; align-items: center; position: relative;
+    }
+    .step:not(:last-child)::after {
+        content: ''; position: absolute; top: 16px; left: 50%; width: 100%; height: 2px;
+        background: rgba(255,255,255,0.1); z-index: 0;
+    }
+    .step.done:not(:last-child)::after { background: #0052CC; }
+    .step-circle {
+        width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15);
+        background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; font-weight: 700; z-index: 1; position: relative;
+        transition: background 0.2s, border-color 0.2s;
+    }
+    .step.done .step-circle { background: #0052CC; border-color: #0052CC; color: #fff; }
+    .step.current .step-circle { background: rgba(0,82,204,0.15); border-color: #0052CC; color: #4f8ef7; box-shadow: 0 0 0 4px rgba(0,82,204,0.15); }
+    .step-label { font-size: 0.7rem; color: var(--dark-text-muted,#a8b2c1); margin-top: 0.4rem; text-align: center; }
+    .step.current .step-label { color: #4f8ef7; font-weight: 600; }
+    .step.done .step-label { color: #a8b2c1; }
+
+    .detail-row { display: flex; gap: 0.5rem; align-items: center; font-size: 0.88rem; margin-bottom: 0.5rem; }
+    .detail-row .label { color: var(--dark-text-muted,#a8b2c1); min-width: 120px; }
+
+    .app-actions-bar { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .btn-primary-soft {
+        background: #0052CC; color: #fff; border: none; border-radius: 30px;
+        padding: 0.5rem 1.4rem; font-size: 0.88rem; text-decoration: none; display: inline-block;
+    }
+    .btn-primary-soft:hover { background: #0040A0; color: #fff; }
+    .btn-outline-soft {
+        background: transparent; border: 1px solid rgba(255,255,255,0.15); color: inherit;
+        border-radius: 30px; padding: 0.5rem 1.4rem; font-size: 0.88rem; text-decoration: none; display: inline-block;
+    }
+    .btn-outline-soft:hover { background: rgba(255,255,255,0.06); color: inherit; }
+    .btn-danger-soft {
+        background: transparent; border: 1px solid rgba(239,68,68,0.4); color: #ef4444;
+        border-radius: 30px; padding: 0.5rem 1.4rem; font-size: 0.88rem; text-decoration: none; display: inline-block;
+    }
+    .btn-danger-soft:hover { background: rgba(239,68,68,0.08); color: #ef4444; }
+</style>
+
+<div class="app-detail-container">
+    <a asp-action="Index" class="btn btn-sm btn-outline-secondary mb-4">← As minhas candidaturas</a>
+
+    <div class="app-detail-card">
+        <div class="app-job-header">
+            <div class="app-job-logo">🏢</div>
+            <div>
+                <div class="app-job-title">@(Model.Opportunity?.Title ?? $"Oportunidade #{Model.OpportunityId}")</div>
+                <div class="app-job-company">@(Model.Opportunity?.Company?.Name ?? "")</div>
+                @if (!string.IsNullOrEmpty(Model.Opportunity?.Location))
+                {
+                    <div class="app-job-company">📍 @Model.Opportunity.Location</div>
+                }
+            </div>
+        </div>
+
+        @{
+            var (label, icon, color) = statusLabels.ContainsKey(Model.Status) ? statusLabels[Model.Status] : ("Desconhecido", "?", "#6b7280");
+        }
+
+        <div class="app-status-badge" style="color: @color; background: @(color)18; border-color: @(color)55;">
+            @icon @label
+        </div>
+
+        @if (!isRejected)
+        {
+            <div class="stepper">
+                @for (int i = 0; i < statusSteps.Length; i++)
+                {
+                    var step = statusSteps[i];
+                    var stepInfo = statusLabels[step];
+                    var isDone = currentStep >= 0 && i < currentStep;
+                    var isCurrent = i == currentStep;
+                    var cssClass = isDone ? "step done" : (isCurrent ? "step current" : "step");
+
+                    <div class="@cssClass">
+                        <div class="step-circle">@(isDone ? "✓" : (i + 1).ToString())</div>
+                        <div class="step-label">@stepInfo.label</div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="mb-3">
+            @if (!string.IsNullOrEmpty(Model.Name))
+            {
+                <div class="detail-row">
+                    <span class="label">Nome usado</span>
+                    <span>@Model.Name</span>
+                </div>
+            }
+            <div class="detail-row">
+                <span class="label">Candidatado em</span>
+                <span>@Model.AppliedAt.ToString("d MMMM yyyy, HH:mm")</span>
+            </div>
+            @if (Model.UpdatedAt.HasValue)
+            {
+                <div class="detail-row">
+                    <span class="label">Última atualização</span>
+                    <span>@Model.UpdatedAt.Value.ToString("d MMMM yyyy, HH:mm")</span>
+                </div>
+            }
+        </div>
+
+        <div class="app-actions-bar">
+            <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@Model.OpportunityId" class="btn-primary-soft">Ver oportunidade</a>
+            @if (isOwner && (Model.Status == 0 || Model.Status == 1))
+            {
+                <a asp-action="Delete" asp-route-id="@Model.JobApplicationId" class="btn-danger-soft">Retirar candidatura</a>
+            }
+            @if (isAdmin)
+            {
+                <a asp-action="Index" class="btn-outline-soft">← Lista</a>
+            }
+        </div>
+    </div>
+</div>

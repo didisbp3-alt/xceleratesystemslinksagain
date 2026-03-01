@@ -1,0 +1,70 @@
+@model UserFilterViewModel
+@{
+    ViewData["Title"] = "Utilizadores";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Utilizadores</h2>
+    @if (Model.Users.Any(u => u.Role == 3))
+    {
+        <span class="badge bg-warning text-dark">⚠️ @Model.Users.Count(u => u.Role == 3) pedido(s) pendente(s)</span>
+    }
+</div>
+
+<form asp-action="Index" method="get" class="row g-3 align-items-end mb-4">
+    <div class="col-md-4">
+        <label asp-for="JobPreference" class="form-label">Preferência de trabalho (ID)</label>
+        <input asp-for="JobPreference" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Nationality" class="form-label">Nacionalidade (ID)</label>
+        <input asp-for="Nationality" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Limpar</a>
+    </div>
+</form>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-warning">@Model.ErrorMessage</div>
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var user in Model.Users)
+    {
+        var roleName = user.Role == 0 ? "Admin" : user.Role == 2 ? "Empregador" : user.Role == 3 ? "⏳ Pendente" : "Utilizador";
+        var roleColor = user.Role == 0 ? "danger" : user.Role == 2 ? "success" : user.Role == 3 ? "warning" : "secondary";
+        <tr class="@(user.Role == 3 ? "table-warning" : "")">
+            <td>@user.Name</td>
+            <td>@user.Email</td>
+            <td><span class="badge bg-@roleColor">@roleName</span></td>
+            <td class="text-end">
+                <a asp-action="Details" asp-route-id="@user.UserId" class="btn btn-sm btn-outline-secondary">Detalhes</a>
+                <a asp-action="Edit" asp-route-id="@user.UserId" class="btn btn-sm btn-outline-primary">Editar</a>
+                @if (user.Role == 3)
+                {
+                    <form method="post" asp-action="ApproveEmployer" asp-route-id="@user.UserId" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-success">✓ Aprovar</button>
+                    </form>
+                    <form method="post" asp-action="RejectEmployer" asp-route-id="@user.UserId" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-danger">✗</button>
+                    </form>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

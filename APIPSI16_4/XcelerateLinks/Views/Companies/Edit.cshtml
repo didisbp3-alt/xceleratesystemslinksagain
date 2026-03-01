@@ -1,0 +1,38 @@
+@model Company
+@{
+    ViewData["Title"] = "Editar empresa";
+}
+
+<h2 class="mb-3">Editar empresa</h2>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="CompanyId" />
+
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label">Nome</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Industry" class="form-label">Indústria</label>
+        <input asp-for="Industry" class="form-control" />
+        <span asp-validation-for="Industry" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Location" class="form-label">Localização</label>
+        <input asp-for="Location" class="form-control" />
+        <span asp-validation-for="Location" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Atualizar</button>
+    <a asp-action="Details" asp-route-id="@Model.CompanyId" class="btn btn-outline-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,227 @@
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Xcelerate Links</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/usermenu.css" asp-append-version="true" />   
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- React + ReactDOM for chat widget and other interactive components -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    @RenderSection("Head", required: false)
+</head>
+
+<body class="dark-theme">
+    @{
+        var homeController = "Home";
+        var homeAction = "Index";
+        var isAdmin = false;
+
+        if (User?.Identity?.IsAuthenticated == true)
+        {
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (!string.IsNullOrEmpty(roleClaim) && roleClaim == "0")
+            {
+                isAdmin = true;
+                homeAction = "AdminIndex";
+            }
+        }
+
+        var isAuthPage = ViewContext.RouteData.Values["Controller"]?.ToString() == "Account" &&
+                        (ViewContext.RouteData.Values["Action"]?.ToString() == "Login" ||
+                         ViewContext.RouteData.Values["Action"]?.ToString() == "Register");
+    }
+
+    @if (!isAuthPage)
+    {
+        <header class="site-header">
+            <div class="container header-inner">
+                <div class="header-left">
+                    <a class="brand" asp-controller="@homeController" asp-action="@homeAction">
+                        <img src="~/images/xcelerate-logo.png" alt="Xcelerate Links" />
+                        <span class="brand-text">Xcelerate Links</span>
+                    </a>
+                </div>
+
+                @if (User?.Identity?.IsAuthenticated == true)
+                {
+                    <div class="header-center">
+                        <form asp-controller="Opportunities" asp-action="Index" method="get" class="search-wrap">
+                            <input name="q" class="search-input" type="search"
+                                   placeholder="Pesquisar oportunidades..." />
+                            <button class="search-btn" type="submit">🔍</button>
+                        </form>
+                    </div>
+                }
+
+                <div class="header-right">
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+
+                        @await Html.PartialAsync("_UserMenu")
+
+                        @if (isAdmin)
+                        {
+                            <a class="btn-filter">Admin</a>
+                        }
+
+                        <button id="themeToggle" class="btn-ghost">🌙</button>
+
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-cta">Sair</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <button id="themeToggle" class="btn-ghost">🌙</button>
+                        <a class="btn-ghost" asp-controller="Account" asp-action="Login">Entrar</a>
+                        <a class="btn-cta" asp-controller="Account" asp-action="Register">Criar Conta</a>
+                    }
+                </div>
+            </div>
+        </header>
+    }
+
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Sobre</h4>
+                    <a href="#" class="footer-link">Sobre nós</a>
+                    <a href="#" class="footer-link">Blog</a>
+                    <a href="#" class="footer-link">Carreiras</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Recursos</h4>
+                    <a href="#" class="footer-link">Documentação</a>
+                    <a href="#" class="footer-link">Suporte</a>
+                    <a href="#" class="footer-link">FAQ</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <a asp-controller="Home" asp-action="Privacy" class="footer-link">Privacidade</a>
+                    <a href="#" class="footer-link">Termos</a>
+                    <a href="#" class="footer-link">Contacto</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Segue-nos</h4>
+                    <a href="#" class="footer-link">Twitter</a>
+                    <a href="#" class="footer-link">LinkedIn</a>
+                    <a href="#" class="footer-link">GitHub</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; @DateTime.UtcNow.Year Xcelerate Links. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    @RenderSection("Scripts", required: false)
+
+    @await Html.PartialAsync("_ChatWidget")
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+
+        function setTheme(theme) {
+            body.classList.remove('dark-theme', 'light-theme');
+            body.classList.add(theme === 'dark' ? 'dark-theme' : 'light-theme');
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('siteTheme', theme);
+        }
+
+        const savedTheme = localStorage.getItem('siteTheme') || 'dark';
+        setTheme(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = body.classList.contains('dark-theme') ? 'dark' : 'light';
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+    </script>
+<script>
+(function() {
+    // Scroll-reveal via IntersectionObserver
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('revealed');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    function observeAll() {
+        document.querySelectorAll('.scroll-reveal:not(.revealed)').forEach(function(el) {
+            observer.observe(el);
+        });
+        // Stagger children of grids
+        document.querySelectorAll('.people-grid, .jobs-grid, .features-grid, .conn-grid').forEach(function(grid) {
+            var items = grid.querySelectorAll('.person-card, .job-card, .feature-card, .conn-card, .stat-card');
+            items.forEach(function(item, i) {
+                item.style.transitionDelay = (i * 0.06) + 's';
+                item.classList.add('scroll-reveal');
+                observer.observe(item);
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', observeAll);
+    } else {
+        observeAll();
+    }
+
+    // Counter animation for stat numbers (rAF-based for consistent speed)
+    function animateCounter(el) {
+        var target = parseInt(el.dataset.target || el.textContent, 10);
+        if (isNaN(target) || target === 0) return;
+        var duration = 1200;
+        var startTime = null;
+        function step(ts) {
+            if (!startTime) startTime = ts;
+            var progress = Math.min((ts - startTime) / duration, 1);
+            var ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            var current = Math.round(ease * target);
+            el.textContent = current.toLocaleString('pt-PT');
+            if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    var counterObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                counterObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.stat-number[data-target]').forEach(function(el) {
+            counterObserver.observe(el);
+        });
+    });
+})();
+</script>
+</body>
+</html>
