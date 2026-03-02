@@ -86,6 +86,21 @@
                 <div class="apply-job-title">@(opp.Title ?? "Oportunidade")</div>
                 <div class="apply-company">@(opp.Company?.Name ?? (opp.CompanyId.HasValue ? $"Empresa #{opp.CompanyId}" : ""))</div>
                 @if (!string.IsNullOrEmpty(opp.Location)) { <div class="apply-company">📍 @opp.Location</div> }
+                @if (!string.IsNullOrEmpty(opp.RequiredJobRoleIds))
+                {
+                    var jobRoles = ViewBag.JobRoles as IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem> ?? Enumerable.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>();
+                    var roleIds = new HashSet<string>(opp.RequiredJobRoleIds.Split(',', StringSplitOptions.RemoveEmptyEntries));
+                    var matched = jobRoles.Where(jr => roleIds.Contains(jr.Id.ToString())).ToList();
+                    if (matched.Any())
+                    {
+                        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem;">
+                            @foreach (var jr in matched)
+                            {
+                                <span style="background:rgba(0,82,204,0.12);border:1px solid rgba(0,82,204,0.3);color:#4f8ef7;border-radius:20px;padding:0.15rem 0.65rem;font-size:0.75rem;">💼 @jr.Name</span>
+                            }
+                        </div>
+                    }
+                }
             </div>
         </div>
     }

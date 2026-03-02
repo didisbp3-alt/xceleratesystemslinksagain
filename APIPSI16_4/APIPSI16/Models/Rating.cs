@@ -11,6 +11,7 @@ namespace APIPSI16.Models
         public int Score { get; set; }
         public string? Review { get; set; }
         public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         public virtual User? RatedByUser { get; set; }
     }

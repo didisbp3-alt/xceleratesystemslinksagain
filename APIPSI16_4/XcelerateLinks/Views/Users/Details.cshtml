@@ -335,6 +335,7 @@
     var entityId = @(Model?.UserId ?? 0);
     var entityType = 'User';
     var selectedScore = 0;
+    var existingRatingId = null; // set if current user already rated
 
     function getToken() {
         var m = document.cookie.split(';').map(function(c){return c.trim();}).find(function(c){return c.startsWith('ApiAccessToken=');});
@@ -347,11 +348,21 @@
         return s;
     }
 
+    function setStarUI(score) {
+        selectedScore = score;
+        document.querySelectorAll('#star-selector .star-opt').forEach(function(s) {
+            s.style.color = parseInt(s.dataset.val) <= score ? '#f59e0b' : '#a8b2c1';
+        });
+    }
+
     function loadRatings() {
+        var list = document.getElementById('ratings-list');
         fetch('/api/ratings/entity/' + entityType + '/' + entityId, {
             headers: { 'Authorization': 'Bearer ' + getToken() }
-        }).then(function(r){ return r.json(); }).then(function(ratings) {
-            var list = document.getElementById('ratings-list');
+        }).then(function(r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function(ratings) {
             var avgEl = document.getElementById('avg-rating-display');
             if (!ratings || ratings.length === 0) {
                 if (list) list.innerHTML = '<p class="text-muted">Ainda sem avaliações.</p>';
@@ -363,25 +374,48 @@
             if (list) {
                 list.innerHTML = ratings.map(function(r) {
                     var date = r.createdAt ? new Date(r.createdAt).toLocaleDateString('pt-PT') : '';
+                    var safeName = (r.ratedByUserName || 'Utilizador').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    var reviewHtml = r.review ? '<p style="font-size:0.85rem;color:#a8b2c1;margin:0;">' + r.review.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>' : '';
                     return '<div style="padding:0.75rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">' +
                         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">' +
-                        '<strong style="font-size:0.88rem;">' + (r.ratedByUserName || 'Utilizador') + '</strong>' +
+                        '<strong style="font-size:0.88rem;">' + safeName + '</strong>' +
                         '<span style="color:#f59e0b;">' + renderStars(r.score, 5) + '</span></div>' +
-                        (r.review ? '<p style="font-size:0.85rem;color:#a8b2c1;margin:0;">' + r.review + '</p>' : '') +
+                        reviewHtml +
                         '<small style="color:#6b7280;">' + date + '</small></div>';
                 }).join('');
             }
-        }).catch(function(){ });
+        }).catch(function(err) {
+            if (list) list.innerHTML = '<p class="text-muted" style="color:#ef4444;">Não foi possível carregar as avaliações.</p>';
+        });
+    }
+
+    // Check if current user already rated this entity (pre-fill form)
+    function loadMyRating() {
+        fetch('/api/ratings/my/' + entityType + '/' + entityId, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        }).then(function(r) {
+            if (r.status === 404) return null;
+            if (!r.ok) return null;
+            return r.json();
+        }).then(function(myRating) {
+            if (!myRating) return;
+            // Pre-fill the rating form with existing values
+            existingRatingId = myRating.ratingId;
+            setStarUI(myRating.score);
+            var reviewEl = document.getElementById('review-text');
+            if (reviewEl) reviewEl.value = myRating.review || '';
+            var btn = document.getElementById('submit-rating-btn');
+            if (btn) btn.textContent = 'Atualizar avaliação';
+            var msg = document.getElementById('rating-msg');
+            if (msg) msg.textContent = '(já avaliaste – podes editar)';
+        }).catch(function() {});
     }
 
     // Star selector
     var stars = document.querySelectorAll('#star-selector .star-opt');
     stars.forEach(function(star) {
         star.addEventListener('click', function() {
-            selectedScore = parseInt(this.dataset.val);
-            stars.forEach(function(s) {
-                s.style.color = parseInt(s.dataset.val) <= selectedScore ? '#f59e0b' : '#a8b2c1';
-            });
+            setStarUI(parseInt(this.dataset.val));
         });
         star.addEventListener('mouseover', function() {
             var v = parseInt(this.dataset.val);
@@ -399,10 +433,12 @@
     window.submitRating = function(id, type) {
         if (selectedScore < 1) { document.getElementById('rating-msg').textContent = 'Seleciona uma classificação.'; return; }
         var review = document.getElementById('review-text').value.trim();
+        var payload = JSON.stringify({ ratedEntityId: parseInt(id), entityType: type, score: selectedScore, review: review });
+        // Always POST (server upserts); or PUT if we have an existing rating ID
         fetch('/api/ratings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
-            body: JSON.stringify({ ratedEntityId: parseInt(id), entityType: type, score: selectedScore, review: review })
+            body: payload
         }).then(function(r) {
             if (r.ok || r.status === 201) {
                 document.getElementById('rating-form-wrap').innerHTML = '<p style="color:#00DD55;">✓ Avaliação enviada!</p>';
@@ -416,6 +452,7 @@
     };
 
     loadRatings();
+    loadMyRating();
 })();
 </script>
 }

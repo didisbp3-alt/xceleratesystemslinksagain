@@ -126,7 +126,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("SenderUserId");
 
-                    b.ToTable("ChatMessages", (string)null);
+                    b.ToTable("ChatMessages");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.ChatUser", b =>
@@ -162,7 +162,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "ChatId", "UserId" }, "UQ_Chat_User")
                         .IsUnique();
 
-                    b.ToTable("ChatUsers", (string)null);
+                    b.ToTable("ChatUsers");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Company", b =>
@@ -183,9 +183,6 @@ namespace APIPSI16.Migrations
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("(getdate())");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Industry")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -200,7 +197,7 @@ namespace APIPSI16.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("CompanyId")
-                        .HasName("PK__Companie__2D971CAC7600FB81");
+                        .HasName("PK__Companies__CompanyId");
 
                     b.ToTable("Companies", (string)null);
                 });
@@ -226,21 +223,18 @@ namespace APIPSI16.Migrations
                         .HasColumnType("date");
 
                     b.Property<string>("Title")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.HasKey("CompanyMemberId")
-                        .HasName("PK__CompanyM__F1920989987E4A54");
+                    b.HasKey("CompanyMemberId");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex(new[] { "CompanyId", "UserId" }, "UQ_Company_User")
-                        .IsUnique();
-
-                    b.ToTable("CompanyMembers", (string)null);
+                    b.ToTable("CompanyMembers");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Connection", b =>
@@ -274,7 +268,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "RequesterUserId", "AddresseeUserId" }, "UQ__Connecti__D964BF246B6D1B80")
                         .IsUnique();
 
-                    b.ToTable("Connections", (string)null);
+                    b.ToTable("Connections");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.EmployerCandidateHistory", b =>
@@ -289,14 +283,10 @@ namespace APIPSI16.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("(getdate())");
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("LastContactAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("(getdate())");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
@@ -306,33 +296,23 @@ namespace APIPSI16.Migrations
 
                     b.Property<string>("Outcome")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("StageReached")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.HasKey("EmployerCandidateHistoryId")
-                        .HasName("PK__Employer__7ED6A363F8F4F90F");
+                    b.HasKey("EmployerCandidateHistoryId");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("OpportunityId");
 
-                    b.HasIndex(new[] { "CompanyId", "LastContactAt" }, "IX_ECH_Company_LastContact")
-                        .IsDescending(false, true);
+                    b.HasIndex("UserId");
 
-                    b.HasIndex(new[] { "CompanyId", "UserId" }, "IX_ECH_Company_User");
-
-                    b.HasIndex(new[] { "UserId" }, "IX_ECH_User");
-
-                    b.HasIndex(new[] { "CompanyId", "UserId", "OpportunityId" }, "UQ_EmployerCandidateHistory")
-                        .IsUnique()
-                        .HasFilter("[OpportunityId] IS NOT NULL");
-
-                    b.ToTable("EmployerCandidateHistory", (string)null);
+                    b.ToTable("EmployerCandidateHistories");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.InterviewRound", b =>
@@ -359,16 +339,15 @@ namespace APIPSI16.Migrations
                         .HasColumnType("tinyint");
 
                     b.Property<DateTime?>("ScheduledAt")
-                        .HasColumnType("datetime");
+                        .HasColumnType("datetime2");
 
-                    b.HasKey("InterviewRoundId")
-                        .HasName("PK__Intervie__33D9F1FB804C69B8");
+                    b.HasKey("InterviewRoundId");
 
                     b.HasIndex("InterviewerUserId");
 
                     b.HasIndex("JobApplicationId");
 
-                    b.ToTable("InterviewRounds", (string)null);
+                    b.ToTable("InterviewRounds");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.JobApplication", b =>
@@ -384,19 +363,33 @@ namespace APIPSI16.Migrations
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("(getdate())");
 
+                    b.Property<string>("CoverLetter")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LinkedInUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .HasMaxLength(50)
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)");
 
+                    b.Property<bool?>("OpenToRemote")
+                        .HasColumnType("bit");
+
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
 
-                    b.Property<byte?>("Stage")
-                        .HasColumnType("tinyint");
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PortfolioUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<byte>("Status")
-                        .HasColumnType("tinyint");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint")
+                        .HasDefaultValue((byte)0);
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime");
@@ -404,12 +397,20 @@ namespace APIPSI16.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("UserId1")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("YearsOfExperience")
+                        .HasColumnType("int");
+
                     b.HasKey("JobApplicationId")
-                        .HasName("PK__JobAppli__BD557F85702879F0");
+                        .HasName("PK__JobApplications__JobApplicationId");
 
                     b.HasIndex("OpportunityId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("JobApplications", (string)null);
                 });
@@ -433,7 +434,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "Name" }, "UQ__JobRoles__737584F68DB4257F")
                         .IsUnique();
 
-                    b.ToTable("JobRoles", (string)null);
+                    b.ToTable("JobRoles");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Nationality", b =>
@@ -462,7 +463,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "Name" }, "UQ__National__737584F6FEC464F0")
                         .IsUnique();
 
-                    b.ToTable("Nationalities", (string)null);
+                    b.ToTable("Nationalities");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Notification", b =>
@@ -502,7 +503,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Opportunity", b =>
@@ -518,24 +519,9 @@ namespace APIPSI16.Migrations
                         .HasColumnType("int")
                         .HasColumnName("CompanyID");
 
-                    b.Property<string>("CompensationCurrency")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("CompensationMax")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("CompensationMin")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int?>("CreatorId")
                         .HasColumnType("int")
                         .HasColumnName("CreatorID");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Duration")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<byte?>("EmploymentType")
                         .HasColumnType("tinyint");
@@ -559,12 +545,17 @@ namespace APIPSI16.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id")
-                        .HasName("PK__Oportuni__3214EC274DEA57B2");
+                        .HasName("PK__Opportunities__ID");
 
                     b.HasIndex("CompanyId");
 
                     b.HasIndex("CreatorId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Opportunities", (string)null);
                 });
@@ -599,7 +590,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Posts", (string)null);
+                    b.ToTable("Posts");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.PostComment", b =>
@@ -649,7 +640,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PostComments", (string)null);
+                    b.ToTable("PostComments");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.PostReaction", b =>
@@ -682,7 +673,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "PostId", "UserId", "ReactionType" }, "UX_Post_User_Reaction")
                         .IsUnique();
 
-                    b.ToTable("PostReactions", (string)null);
+                    b.ToTable("PostReactions");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.ProfileEducation", b =>
@@ -723,7 +714,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProfileEducations", (string)null);
+                    b.ToTable("ProfileEducations");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.ProfileExperience", b =>
@@ -768,7 +759,7 @@ namespace APIPSI16.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProfileExperiences", (string)null);
+                    b.ToTable("ProfileExperiences");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.Rating", b =>
@@ -784,7 +775,8 @@ namespace APIPSI16.Migrations
 
                     b.Property<string>("EntityType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("RatedByUserId")
                         .HasColumnType("int");
@@ -793,10 +785,14 @@ namespace APIPSI16.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Review")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("Score")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("RatingId");
 
@@ -863,7 +859,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "Name" }, "UQ__Skills__737584F61738EFED")
                         .IsUnique();
 
-                    b.ToTable("Skills", (string)null);
+                    b.ToTable("Skills");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.SkillEndorsement", b =>
@@ -893,7 +889,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "UserSkillId", "EndorserUserId" }, "UX_Endorse")
                         .IsUnique();
 
-                    b.ToTable("SkillEndorsements", (string)null);
+                    b.ToTable("SkillEndorsements");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.User", b =>
@@ -904,6 +900,9 @@ namespace APIPSI16.Migrations
                         .HasColumnName("UserID");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+
+                    b.Property<string>("BannerUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateOnly?>("DoB")
                         .HasColumnType("date");
@@ -948,7 +947,7 @@ namespace APIPSI16.Migrations
                     b.HasKey("UserId")
                         .HasName("PK__Users__1788CCACFE71B925");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.UserJobPreference", b =>
@@ -978,7 +977,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "UserId", "JobRoleId" }, "UQ_User_JobRole")
                         .IsUnique();
 
-                    b.ToTable("UserJobPreferences", (string)null);
+                    b.ToTable("UserJobPreferences");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.UserSkill", b =>
@@ -1011,7 +1010,7 @@ namespace APIPSI16.Migrations
                     b.HasIndex(new[] { "UserId", "SkillId" }, "UX_User_Skill")
                         .IsUnique();
 
-                    b.ToTable("UserSkills", (string)null);
+                    b.ToTable("UserSkills");
                 });
 
             modelBuilder.Entity("APIPSI16.Models.AuditLog", b =>
@@ -1079,14 +1078,14 @@ namespace APIPSI16.Migrations
                     b.HasOne("APIPSI16.Models.Company", "Company")
                         .WithMany("CompanyMembers")
                         .HasForeignKey("CompanyId")
-                        .IsRequired()
-                        .HasConstraintName("FK_CompanyMembers_Company");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("APIPSI16.Models.User", "User")
                         .WithMany("CompanyMembers")
                         .HasForeignKey("UserId")
-                        .IsRequired()
-                        .HasConstraintName("FK_CompanyMembers_User");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Company");
 
@@ -1098,19 +1097,18 @@ namespace APIPSI16.Migrations
                     b.HasOne("APIPSI16.Models.Company", "Company")
                         .WithMany("EmployerCandidateHistories")
                         .HasForeignKey("CompanyId")
-                        .IsRequired()
-                        .HasConstraintName("FK__EmployerC__Compa__72C60C4A");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("APIPSI16.Models.Opportunity", "Opportunity")
                         .WithMany("EmployerCandidateHistories")
-                        .HasForeignKey("OpportunityId")
-                        .HasConstraintName("FK__EmployerC__Oppor__74AE54BC");
+                        .HasForeignKey("OpportunityId");
 
                     b.HasOne("APIPSI16.Models.User", "User")
                         .WithMany("EmployerCandidateHistories")
                         .HasForeignKey("UserId")
-                        .IsRequired()
-                        .HasConstraintName("FK__EmployerC__UserI__73BA3083");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Company");
 
@@ -1123,14 +1121,13 @@ namespace APIPSI16.Migrations
                 {
                     b.HasOne("APIPSI16.Models.User", "InterviewerUser")
                         .WithMany("InterviewRounds")
-                        .HasForeignKey("InterviewerUserId")
-                        .HasConstraintName("FK__Interview__Inter__43D61337");
+                        .HasForeignKey("InterviewerUserId");
 
                     b.HasOne("APIPSI16.Models.JobApplication", "JobApplication")
                         .WithMany("InterviewRounds")
                         .HasForeignKey("JobApplicationId")
-                        .IsRequired()
-                        .HasConstraintName("FK__Interview__JobAp__42E1EEFE");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("InterviewerUser");
 
@@ -1142,14 +1139,20 @@ namespace APIPSI16.Migrations
                     b.HasOne("APIPSI16.Models.Opportunity", "Opportunity")
                         .WithMany("JobApplications")
                         .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("FK__JobApplic__Oppor__3F115E1A");
+                        .HasConstraintName("FK_JobApplications_Opportunity");
 
                     b.HasOne("APIPSI16.Models.User", "User")
-                        .WithMany("JobApplications")
+                        .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("FK__JobApplic__UserI__40058253");
+                        .HasConstraintName("FK_JobApplications_User");
+
+                    b.HasOne("APIPSI16.Models.User", null)
+                        .WithMany("JobApplications")
+                        .HasForeignKey("UserId1");
 
                     b.Navigation("Opportunity");
 
@@ -1182,9 +1185,13 @@ namespace APIPSI16.Migrations
                         .HasConstraintName("FK_Opportunities_Company");
 
                     b.HasOne("APIPSI16.Models.User", "Creator")
-                        .WithMany("Opportunities")
+                        .WithMany()
                         .HasForeignKey("CreatorId")
                         .HasConstraintName("FK_Opportunities_CreatedBy");
+
+                    b.HasOne("APIPSI16.Models.User", null)
+                        .WithMany("Opportunities")
+                        .HasForeignKey("UserId");
 
                     b.Navigation("Company");
 

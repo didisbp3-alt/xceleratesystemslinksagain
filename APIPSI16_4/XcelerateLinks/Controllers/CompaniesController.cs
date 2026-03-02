@@ -4,17 +4,20 @@ using Microsoft.Extensions.Logging;
 using APIPSI16.Models;
 using APIPSI16.Services;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 
 namespace XcelerateLinks.Mvc.Controllers
 {
     public class CompaniesController : ApiControllerBase
     {
         private readonly ILogger<CompaniesController> _logger;
+        private readonly IFileStorageService _fileStorage;
 
-        public CompaniesController(IHttpClientFactory httpFactory, ILogger<CompaniesController> logger, ISessionService sessionService)
+        public CompaniesController(IHttpClientFactory httpFactory, ILogger<CompaniesController> logger, ISessionService sessionService, IFileStorageService fileStorage)
             : base(httpFactory, sessionService)
         {
             _logger = logger;
+            _fileStorage = fileStorage;
         }
 
         // Role-dispatched: admin → Index (table), user → UserIndex (company explorer)
@@ -219,13 +222,31 @@ namespace XcelerateLinks.Mvc.Controllers
 
             if (logoFile != null && logoFile.Length > 0)
             {
-                var client = CreateAuthorizedClient();
-                using var form = new MultipartFormDataContent();
-                var streamContent = new StreamContent(logoFile.OpenReadStream());
-                streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
-                    string.IsNullOrEmpty(logoFile.ContentType) ? "application/octet-stream" : logoFile.ContentType);
-                form.Add(streamContent, "file", logoFile.FileName);
-                await client.PostAsync($"api/companies/{id}/upload-logo", form);
+                if (!_fileStorage.ValidateImageFile(logoFile, out var validationError))
+                {
+                    TempData["LogoError"] = validationError;
+                    return RedirectToAction(nameof(Edit), new { id });
+                }
+
+                try
+                {
+                    // Save to MVC's wwwroot/uploads/companies so the image is served by the MVC app
+                    var fileUrl = await _fileStorage.SaveFileAsync(logoFile, "companies");
+
+                    // Tell the API to update the CompanyLogoUrl field
+                    var client = CreateAuthorizedClient();
+                    var company = await (await client.GetAsync($"api/companies/{id}")).Content.ReadFromJsonAsync<Company>();
+                    if (company != null)
+                    {
+                        company.CompanyLogoUrl = fileUrl;
+                        await client.PutAsJsonAsync($"api/companies/{id}", company);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to upload company logo for company {Id}", id);
+                    TempData["LogoError"] = "Falha no upload. Tente novamente.";
+                }
             }
 
             return RedirectToAction(nameof(Edit), new { id });

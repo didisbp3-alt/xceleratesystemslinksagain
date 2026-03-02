@@ -12,6 +12,7 @@ namespace APIPSI16.Models.DTOs
         public int Score { get; set; } // 1-5
         public string? Review { get; set; }
         public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
 
     public class CreateRatingDTO

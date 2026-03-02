@@ -69,14 +69,18 @@
         <!-- Logo upload (separate form) -->
         <div class="co-edit-card mt-3">
             <h3>🖼️ Logótipo da empresa</h3>
+            @if (TempData["LogoError"] != null)
+            {
+                <div class="alert alert-danger mt-2" style="font-size:0.85rem;">@TempData["LogoError"]</div>
+            }
             <div class="upload-row mb-3">
                 @if (!string.IsNullOrEmpty(Model?.CompanyLogoUrl))
                 {
-                    <img src="@Model.CompanyLogoUrl" class="logo-preview" alt="Logo" />
+                    <img src="@Model.CompanyLogoUrl" class="logo-preview" alt="Logo" id="logoPreview" />
                 }
                 else
                 {
-                    <span class="logo-placeholder">@initial</span>
+                    <span class="logo-placeholder" id="logoPreview">@initial</span>
                 }
                 <div>
                     <p style="font-size:0.82rem;color:#a8b2c1;margin:0 0 0.4rem;">Ficheiro JPG, PNG ou GIF. Máx. 5MB.</p>

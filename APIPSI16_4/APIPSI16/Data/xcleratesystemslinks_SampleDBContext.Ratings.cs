@@ -30,6 +30,9 @@ namespace APIPSI16.Data
                 entity.Property(e => e.CreatedAt)
                     .HasColumnType("datetime2");
 
+                entity.Property(e => e.UpdatedAt)
+                    .HasColumnType("datetime2");
+
                 entity.HasOne(d => d.RatedByUser)
                     .WithMany()
                     .HasForeignKey(d => d.RatedByUserId)
