@@ -256,178 +256,414 @@
 </script>
 <script>
 // ---- Language Toggle (PT / EN) ----
+// Uses a TreeWalker to reliably find and translate ALL text nodes,
+// including those with emoji prefixes, whitespace padding, and partial matches.
 (function() {
-    var translations = {
-        en: {
-            // Navigation
-            'Pesquisar oportunidades...': 'Search opportunities...',
-            'Sair': 'Sign out',
-            'Entrar': 'Sign in',
-            'Criar Conta': 'Create Account',
-            // Footer
-            'Sobre': 'About',
-            'Sobre nós': 'About us',
-            'Blog': 'Blog',
-            'Carreiras': 'Careers',
-            'Recursos': 'Resources',
-            'Documentação': 'Documentation',
-            'Suporte': 'Support',
-            'FAQ': 'FAQ',
-            'Legal': 'Legal',
-            'Privacidade': 'Privacy',
-            'Termos': 'Terms',
-            'Contacto': 'Contact',
-            'Segue-nos': 'Follow us',
-            'Todos os direitos reservados.': 'All rights reserved.',
-            // Common UI
-            'Conectar': 'Connect',
-            'Enviar Mensagem': 'Send Message',
-            'Editar Perfil': 'Edit Profile',
-            'Tornar-me Empregador': 'Become an Employer',
-            'Pedido em análise': 'Request under review',
-            'Empregador': 'Employer',
-            'Ver todos os utilizadores': 'View all users',
-            'Sem descrição pública.': 'No public description.',
-            'Experiência': 'Experience',
-            'Formação': 'Education',
-            'Competências': 'Skills',
-            'Avaliações': 'Reviews',
-            'Nenhuma experiência pública disponível.': 'No public experience available.',
-            'Nenhuma formação adicionada.': 'No education added.',
-            'Nenhuma competência listada.': 'No skills listed.',
-            'Candidatar': 'Apply',
-            'Cancelar': 'Cancel',
-            'Guardar': 'Save',
-            'Guardar alterações': 'Save changes',
-            'Publicar': 'Publish',
-            'Criar': 'Create',
-            'Eliminar': 'Delete',
-            'Editar': 'Edit',
-            'Ver': 'View',
-            'Voltar': 'Back',
-            'Pesquisar': 'Search',
-            'Filtrar': 'Filter',
-            // Opportunities
-            'Oportunidades': 'Opportunities',
-            'Criar Oportunidade': 'Create Opportunity',
-            '+ Criar Oportunidade': '+ Create Opportunity',
-            'Criar oportunidade': 'Create opportunity',
-            'Título da vaga *': 'Job title *',
-            'Empresa *': 'Company *',
-            'Localização': 'Location',
-            'Tipo de emprego': 'Employment type',
-            'Modalidade': 'Work mode',
-            'Nível de senioridade': 'Seniority level',
-            'Áreas de trabalho': 'Job areas',
-            'Full-Time': 'Full-Time',
-            'Part-Time': 'Part-Time',
-            'Contract': 'Contract',
-            'Internship': 'Internship',
-            'Freelance': 'Freelance',
-            'No local': 'On-site',
-            'Híbrido': 'Hybrid',
-            'Remoto': 'Remote',
-            'Junior': 'Junior',
-            'Mid-level': 'Mid-level',
-            'Senior': 'Senior',
-            'Lead': 'Lead',
-            'Manager': 'Manager',
-            'Seleciona...': 'Select...',
-            'Seleciona uma empresa...': 'Select a company...',
-            // Companies
-            'Empresas': 'Companies',
-            'Criar Empresa': 'Create Company',
-            'Empresa': 'Company',
-            'Setor / Indústria': 'Industry',
-            'Nome da empresa *': 'Company name *',
-            'Pesquisar empresas...': 'Search companies...',
-            'Editar empresa': 'Edit company',
-            // Users
-            'Utilizadores': 'Users',
-            'Rede': 'Network',
-            'Nome completo': 'Full name',
-            'Sobre mim': 'About me',
-            // Auth
-            'Email': 'Email',
-            'Password': 'Password',
-            'Palavra-passe': 'Password',
-            'Confirmar password': 'Confirm password',
-            // Notifications
-            'Notificações': 'Notifications',
-            'Sem notificações': 'No notifications',
-            // Chat
-            'Pesquisar conversas...': 'Search conversations...',
-            'Sem conversas': 'No conversations',
-            'Sem mensagens': 'No messages',
-            'Escreve uma mensagem...': 'Write a message...',
-            'Nova conversa': 'New conversation',
-            // General
-            'Sim': 'Yes',
-            'Não': 'No',
-            'Confirmar': 'Confirm',
-            'Fechar': 'Close',
-            'Abrir': 'Open',
-            'Novo': 'New',
-            'Nova': 'New',
-            'Anterior': 'Previous',
-            'Próximo': 'Next',
-            'Página': 'Page',
-            'de': 'of',
-            'Resultados': 'Results',
-        },
-        pt: {}
+    // ------------------------------------------------------------------ //
+    //  DICTIONARY  (PT → EN)                                              //
+    // ------------------------------------------------------------------ //
+    var PT_EN = {
+        // ----- Navigation -----
+        'Pesquisar oportunidades...': 'Search opportunities...',
+        'Sair': 'Sign out',
+        'Entrar': 'Sign in',
+        'Criar Conta': 'Create Account',
+        'Criar conta': 'Create account',
+        'Admin': 'Admin',
+        // ----- Footer -----
+        'Sobre': 'About',
+        'Sobre nós': 'About us',
+        'Blog': 'Blog',
+        'Carreiras': 'Careers',
+        'Recursos': 'Resources',
+        'Documentação': 'Documentation',
+        'Suporte': 'Support',
+        'FAQ': 'FAQ',
+        'Legal': 'Legal',
+        'Privacidade': 'Privacy',
+        'Termos': 'Terms',
+        'Contacto': 'Contact',
+        'Segue-nos': 'Follow us',
+        'Todos os direitos reservados.': 'All rights reserved.',
+        'Twitter': 'Twitter',
+        // ----- Common actions -----
+        'Conectar': 'Connect',
+        'Enviar Mensagem': 'Send Message',
+        'Editar Perfil': 'Edit Profile',
+        'Editar perfil': 'Edit profile',
+        'Pedido em análise': 'Request under review',
+        'Empregador': 'Employer',
+        'Candidatar': 'Apply',
+        'Candidatar-se': 'Apply now',
+        'Retirar': 'Withdraw',
+        'Retirar candidatura': 'Withdraw application',
+        'Cancelar': 'Cancel',
+        'Guardar': 'Save',
+        'Guardar alterações': 'Save changes',
+        'Publicar': 'Publish',
+        'Criar': 'Create',
+        'Eliminar': 'Delete',
+        'Editar': 'Edit',
+        'Ver': 'View',
+        'Voltar': 'Back',
+        'Pesquisar': 'Search',
+        'Filtrar': 'Filter',
+        'Detalhes': 'Details',
+        'Confirmar': 'Confirm',
+        'Fechar': 'Close',
+        'Submeter': 'Submit',
+        'Sim': 'Yes',
+        'Não': 'No',
+        'Total': 'Total',
+        'Data': 'Date',
+        'Tipo': 'Type',
+        'Título': 'Title',
+        'Nome': 'Name',
+        'Anterior': 'Previous',
+        'Próximo': 'Next',
+        'Ações': 'Actions',
+        'Ver mais': 'See more',
+        'Ver empresa': 'View company',
+        'Solicitar novamente': 'Request again',
+        'Ver oportunidade': 'View opportunity',
+        'Ver página pública': 'View public page',
+        'Ver vagas': 'View jobs',
+        'Ver Detalhes': 'View Details',
+        'Ver Pedidos': 'View Requests',
+        'Ver Talentos': 'View Talents',
+        'Ver todos os utilizadores': 'View all users',
+        'Ver todas as empresas': 'View all companies',
+        'Ver todas as oportunidades': 'View all opportunities',
+        // ----- Opportunities -----
+        'Oportunidades': 'Opportunities',
+        'Oportunidades de Emprego': 'Job Opportunities',
+        'Oportunidades em Destaque': 'Featured Opportunities',
+        'Criar Oportunidade': 'Create Opportunity',
+        'Criar oportunidade': 'Create opportunity',
+        '+ Criar Oportunidade': '+ Create Opportunity',
+        '+ Criar oportunidade': '+ Create opportunity',
+        '+ Nova vaga': '+ New job',
+        'Título da vaga *': 'Job title *',
+        'Empresa *': 'Company *',
+        'Localização': 'Location',
+        'Tipo de emprego': 'Employment type',
+        'Modalidade': 'Work mode',
+        'Nível de senioridade': 'Seniority level',
+        'Áreas de trabalho': 'Job areas',
+        'Full-Time': 'Full-Time',
+        'Part-Time': 'Part-Time',
+        'Contract': 'Contract',
+        'Internship': 'Internship',
+        'Freelance': 'Freelance',
+        'No local': 'On-site',
+        'Híbrido': 'Hybrid',
+        'Remoto': 'Remote',
+        'Junior': 'Junior',
+        'Mid-level': 'Mid-level',
+        'Senior': 'Senior',
+        'Lead': 'Lead',
+        'Manager': 'Manager',
+        'Seleciona...': 'Select...',
+        'Seleciona uma empresa...': 'Select a company...',
+        'Seleciona um utilizador...': 'Select a user...',
+        'Ainda não há vagas publicadas para esta empresa.': 'No jobs published for this company yet.',
+        'Nenhuma oportunidade encontrada para os filtros aplicados.': 'No opportunities found for the selected filters.',
+        'Vagas publicadas': 'Published jobs',
+        'Publicar oportunidades de emprego': 'Publish job opportunities',
+        // ----- Companies -----
+        'Empresas': 'Companies',
+        'Criar Empresa': 'Create Company',
+        'Empresa': 'Company',
+        'Setor / Indústria': 'Industry',
+        'Nome da empresa *': 'Company name *',
+        'Pesquisar empresas...': 'Search companies...',
+        'Editar empresa': 'Edit company',
+        'Nova empresa': 'New company',
+        'Adicionar membros à equipa': 'Add team members',
+        'Ainda sem membros de equipa.': 'No team members yet.',
+        'Descobre empresas e as suas oportunidades de emprego.': 'Discover companies and their job opportunities.',
+        'Representar e gerir o perfil da tua empresa': 'Represent and manage your company profile',
+        'Ainda não há candidaturas para esta empresa.': 'No applications for this company yet.',
+        'Carregar logótipo': 'Upload logo',
+        'Logótipo da empresa': 'Company logo',
+        'Informação da empresa': 'Company information',
+        'Indústria': 'Industry',
+        'As Minhas Empresas': 'My Companies',
+        // ----- Users / Profile -----
+        'Utilizadores': 'Users',
+        'Utilizadores Ativos': 'Active Users',
+        'Utilizador': 'User',
+        'Utilizador ou Email': 'Username or Email',
+        'Rede': 'Network',
+        'Rede Profissional': 'Professional Network',
+        'Nome completo': 'Full name',
+        'Sobre mim': 'About me',
+        'Experiência': 'Experience',
+        'Formação': 'Education',
+        'Competências': 'Skills',
+        'Avaliações': 'Reviews',
+        'Experiências': 'Experiences',
+        'Sem descrição pública.': 'No public description.',
+        'Nenhuma experiência pública disponível.': 'No public experience available.',
+        'Nenhuma formação adicionada.': 'No education added.',
+        'Nenhuma competência listada.': 'No skills listed.',
+        'Sem experiência': 'No experience',
+        'Disponível para trabalhar': 'Open to work',
+        'Disponível para trabalho remoto': 'Available for remote work',
+        'Completude do perfil': 'Profile completeness',
+        'Completa o teu perfil para aumentar a visibilidade.': 'Complete your profile to increase visibility.',
+        '✓ Perfil completo!': '✓ Profile complete!',
+        'Preferências de cargo': 'Job preferences',
+        'Preferências de trabalho': 'Work preferences',
+        'Tornar-me Empregador': 'Become an Employer',
+        'Torna-te um empregador para criar vagas e gerir candidatos na Xcelerate Links.': 'Become an employer to create jobs and manage candidates on Xcelerate Links.',
+        '⏳ Pedido em análise': '⏳ Request under review',
+        '⏳ Pendente': '⏳ Pending',
+        '✓ Empregador': '✓ Employer',
+        'Submeter pedido': 'Submit request',
+        'Apresenta-te ao recrutador': 'Introduce yourself to the recruiter',
+        // ----- Applications -----
+        'Candidaturas': 'Applications',
+        'Candidatura': 'Application',
+        'As Minhas Candidaturas': 'My Applications',
+        'Candidatado em': 'Applied on',
+        'Carta de Apresentação': 'Cover Letter',
+        'Anos de experiência': 'Years of experience',
+        'Carrega um documento': 'Upload a document',
+        'Submeter candidatura →': 'Submit application →',
+        'Tem a certeza que deseja eliminar esta candidatura?': 'Are you sure you want to delete this application?',
+        'Ainda não te candidataste a nenhuma oportunidade.': 'You have not applied to any opportunity yet.',
+        'Ainda não há candidaturas para esta empresa.': 'No applications for this company yet.',
+        'Acompanha o estado das tuas candidaturas a empregos.': 'Track the status of your job applications.',
+        'Acompanha todas as candidaturas recebidas': 'Track all received applications',
+        'Enviada': 'Submitted',
+        'Em análise': 'Under review',
+        'Entrevista': 'Interview',
+        'Oferta': 'Offer',
+        'Aceite': 'Accepted',
+        'Recusada': 'Rejected',
+        'Resumo': 'Summary',
+        '📊 Resumo': '📊 Summary',
+        '📋 As Minhas Candidaturas': '📋 My Applications',
+        // ----- Connections -----
+        'As Minhas Ligações': 'My Connections',
+        'Ainda não tens ligações.': 'You have no connections yet.',
+        'Ligações Ativas': 'Active Connections',
+        '+ Ligar': '+ Connect',
+        // ----- Employer / Admin -----
+        'Pedidos de Empregador': 'Employer Requests',
+        'Dashboard Administrativo': 'Admin Dashboard',
+        'Dashboard Completo': 'Full Dashboard',
+        'Analisa e aprova pedidos de novas contas de empregador': 'Review and approve new employer account requests',
+        'Utilizadores que submeteram pedido para se tornarem empregadores.': 'Users who requested to become employers.',
+        'Configurar sistema e permissões': 'Configure system and permissions',
+        'Configurações': 'Settings',
+        '✓ Aprovar': '✓ Approve',
+        '✓ Aprovar Empregador': '✓ Approve Employer',
+        '✗ Recusar': '✗ Reject',
+        '✗ Rejeitar': '✗ Reject',
+        '✓ Aceitar': '✓ Accept',
+        '📩 Pedidos pendentes': '📩 Pending requests',
+        // ----- Home page -----
+        'Conecte Talento com Oportunidades': 'Connect Talent with Opportunities',
+        'Encontre as melhores oportunidades de emprego ou recrute os melhores talentos.\n                    Xcelerate Links é a plataforma que acelera sua carreira.': 'Find the best job opportunities or recruit top talent. Xcelerate Links is the platform that accelerates your career.',
+        'Explorar Oportunidades': 'Explore Opportunities',
+        'Ver Talentos': 'View Talents',
+        'Começar Agora': 'Get Started',
+        'Pronto para Acelerar Sua Carreira?': 'Ready to Accelerate Your Career?',
+        'Criar Conta Gratuita': 'Create Free Account',
+        'Junte-se a milhares de profissionais que já encontraram suas oportunidades ideais.': 'Join thousands of professionals who have already found their ideal opportunities.',
+        'Oportunidades em Destaque': 'Featured Opportunities',
+        'Confira as melhores oportunidades disponíveis agora.': 'Check the best opportunities available now.',
+        'Alcance Global': 'Global Reach',
+        'Acesse oportunidades de empresas do mundo todo.': 'Access opportunities from companies worldwide.',
+        'Chat Integrado': 'Integrated Chat',
+        'Comunique-se diretamente com recrutadores e candidatos em tempo real.': 'Communicate directly with recruiters and candidates in real time.',
+        'Segurança Garantida': 'Security Guaranteed',
+        'Seus dados estão protegidos com as melhores práticas de segurança.': 'Your data is protected with the best security practices.',
+        'Rápido e Eficiente': 'Fast and Efficient',
+        'Processo de candidatura simplificado e resposta rápida dos recrutadores.': 'Simplified application process and fast response from recruiters.',
+        'Tudo o que você precisa para crescer profissionalmente em um único lugar.': 'Everything you need to grow professionally in one place.',
+        'Receba recomendações de oportunidades baseadas no seu perfil e preferências.': 'Receive opportunity recommendations based on your profile and preferences.',
+        'Acompanhe suas candidaturas e gerencie oportunidades com facilidade.': 'Track your applications and manage opportunities with ease.',
+        'Descubra profissionais e expanda a sua rede de contactos.': 'Discover professionals and expand your network.',
+        'Crie a sua conta e comece a partilhar oportunidades hoje.': 'Create your account and start sharing opportunities today.',
+        // ----- Auth -----
+        'Aceda à sua conta para gerir os seus links e oportunidades.': 'Access your account to manage your links and opportunities.',
+        'Bem-vindo de volta': 'Welcome back',
+        'Palavra-passe': 'Password',
+        'Senha': 'Password',
+        'Confirmar Senha': 'Confirm Password',
+        'Confirmar password': 'Confirm password',
+        'Definir Senha': 'Set Password',
+        'Redefinir Senha': 'Reset Password',
+        'Recuperar Senha': 'Recover Password',
+        'Senha redefinida com sucesso!': 'Password reset successfully!',
+        'Registar': 'Register',
+        'Criar nova conta': 'Create new account',
+        'Ainda não tem conta? Criar conta': 'No account yet? Create account',
+        'Voltar ao login': 'Back to login',
+        'A recuperar senha para:': 'Recovering password for:',
+        'Solicitar novamente': 'Request again',
+        // ----- Notifications -----
+        'Notificações': 'Notifications',
+        'Sem notificações': 'No notifications',
+        // ----- Chat -----
+        'Pesquisar conversas...': 'Search conversations...',
+        'Sem conversas': 'No conversations',
+        'Sem mensagens': 'No messages',
+        'Escreve uma mensagem...': 'Write a message...',
+        'Mensagem...': 'Message...',
+        'Nova conversa': 'New conversation',
+        'Nova Conversa': 'New Conversation',
+        'Conversas': 'Conversations',
+        'Detalhes da conversa': 'Conversation details',
+        'Sem conversas ainda': 'No conversations yet',
+        'Criar conversa →': 'Create conversation →',
+        'Mensagens': 'Messages',
+        'Tem a certeza que deseja eliminar esta conversa?': 'Are you sure you want to delete this conversation?',
+        // ----- Table headers / labels -----
+        'Criado em': 'Created on',
+        'Criado por': 'Created by',
+        'Criador': 'Creator',
+        'Última atualização': 'Last updated',
+        'Nome': 'Name',
+        'Indústria': 'Industry',
+        // ----- Misc -----
+        'Equipa': 'Team',
+        'Ainda sem avaliações.': 'No reviews yet.',
+        'Deixa a tua avaliação': 'Leave your review',
+        'Enviar avaliação': 'Submit review',
+        '✓ Avaliação enviada!': '✓ Review submitted!',
+        'Ainda não há candidaturas para esta empresa.': 'No applications for this company yet.',
+        'Sem áreas disponíveis': 'No areas available',
+        'Podes selecionar vários setores.': 'You can select multiple sectors.',
+        'Podes escolher mais do que uma área.': 'You can choose more than one area.',
+        '← Oportunidades': '← Opportunities',
+        '← Empresas': '← Companies',
+        '← Gestão': '← Management',
+        '← Lista': '← List',
+        '← Mensagens': '← Messages',
+        '← O Meu Perfil': '← My Profile',
+        '← Dashboard': '← Dashboard',
+        '← Detalhes': '← Details',
+        '← Voltar': '← Back',
+        '← Voltar ao Início': '← Back to Home',
+        '← Voltar às oportunidades': '← Back to opportunities',
+        '← As minhas candidaturas': '← My applications',
+        'Ainda não há vagas publicadas para esta empresa.': 'No jobs published for this company yet.',
+        'Lógótipo da empresa': 'Company logo',
+        '🖼️ Logótipo da empresa': '🖼️ Company logo',
+        '🏢 Informação da empresa': '🏢 Company information',
+        '🏢 As Minhas Empresas': '🏢 My Companies',
+        '🏢 Tornar-me Empregador': '🏢 Become an Employer',
+        '🏢 Pedidos de Empregador': '🏢 Employer Requests',
+        '🏢 Empresas': '🏢 Companies',
+        '💼 Oportunidades': '💼 Opportunities',
+        '💼 Oportunidades de emprego': '💼 Job Opportunities',
+        '👥 Equipa': '👥 Team',
+        '👥 Rede Profissional': '👥 Professional Network',
+        '💬 Enviar Mensagem': '💬 Send Message',
+        '💬 Mensagem': '💬 Message',
+        '💬 Nova Conversa': '💬 New Conversation',
+        '🤝 As Minhas Ligações': '🤝 My Connections',
+        '⭐ Avaliações': '⭐ Reviews',
+        '📊 Resumo': '📊 Summary',
+        '📋 As Minhas Candidaturas': '📋 My Applications',
+        '🏢 Informação da empresa': '🏢 Company information',
+        '✏️ Editar Oportunidade': '✏️ Edit Opportunity',
+        '✏️ Editar Perfil': '✏️ Edit Profile',
+        '🟢 Disponível para trabalhar': '🟢 Open to work',
+        '🔍 Nenhuma oportunidade encontrada para os filtros aplicados.': '🔍 No opportunities found for the selected filters.',
+        'Acompanha o estado das tuas candidaturas a empregos.': 'Track the status of your job applications.',
     };
 
-    // Always start in Portuguese — ignore any stale 'en' from localStorage
     var currentLang = 'pt';
-    var originalTexts = new Map();
+    // Maps each modified DOM node (text node, input, textarea) → its original value
+    var saved = new Map();
+
+    // Translate a single text node's content
+    function translateTextNode(node, dict) {
+        var orig = node.textContent;
+        var trimmed = orig.trim();
+        if (!trimmed) return;
+        // 1. Exact trimmed match
+        if (dict[trimmed] !== undefined) {
+            if (!saved.has(node)) saved.set(node, orig);
+            node.textContent = orig.replace(trimmed, dict[trimmed]);
+            return;
+        }
+        // 2. Substring replacement (longest keys first to avoid partial clobbers)
+        var newText = orig;
+        var changed = false;
+        var keys = Object.keys(dict).sort(function(a,b){ return b.length - a.length; });
+        for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            if (newText.indexOf(k) !== -1) {
+                newText = newText.split(k).join(dict[k]);
+                changed = true;
+            }
+        }
+        if (changed) {
+            if (!saved.has(node)) saved.set(node, orig);
+            node.textContent = newText;
+        }
+    }
 
     function applyLang(lang) {
         if (lang === 'pt') {
-            originalTexts.forEach(function(orig, node) {
-                if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
-                    node.placeholder = orig;
-                } else {
-                    node.textContent = orig;
+            // Restore every saved node
+            saved.forEach(function(origVal, node) {
+                if (node.nodeType === 3) { // Text node
+                    node.textContent = origVal;
+                } else if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA' || node.tagName === 'SELECT') {
+                    node.placeholder = origVal;
                 }
             });
-            originalTexts.clear();
+            saved.clear();
             document.documentElement.lang = 'pt-PT';
         } else {
-            var dict = translations[lang] || {};
-            document.querySelectorAll('a, button, span, p, h1, h2, h3, h4, h5, h6, label, th, td, li, option, small, strong, em, div.form-label, .form-label-styled').forEach(function(el) {
-                // Skip the lang/theme toggle buttons themselves
-                if (el.id === 'langToggle' || el.id === 'themeToggle') return;
-                var text;
-                if (el.children.length === 0) {
-                    text = el.textContent.trim();
-                } else {
-                    // For elements with children, only match if direct text nodes form the full key
-                    text = Array.from(el.childNodes)
-                        .filter(function(n){ return n.nodeType === 3; })
-                        .map(function(n){ return n.textContent; })
-                        .join('').trim();
-                }
-                if (text && dict[text]) {
-                    if (!originalTexts.has(el)) originalTexts.set(el, el.textContent);
-                    if (el.children.length === 0) {
-                        el.textContent = dict[text];
-                    } else {
-                        Array.from(el.childNodes).forEach(function(n) {
-                            if (n.nodeType === 3 && n.textContent.trim() === text) {
-                                n.textContent = dict[text];
-                            }
-                        });
+            var dict = PT_EN; // only EN supported for now
+
+            // --- Walk ALL text nodes in <body> ---
+            var walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        var p = node.parentElement;
+                        if (!p) return NodeFilter.FILTER_REJECT;
+                        // Skip script/style and the toggle buttons
+                        var tag = p.tagName;
+                        if (tag === 'SCRIPT' || tag === 'STYLE') return NodeFilter.FILTER_REJECT;
+                        if (p.id === 'langToggle' || p.id === 'themeToggle') return NodeFilter.FILTER_REJECT;
+                        return NodeFilter.FILTER_ACCEPT;
                     }
                 }
-            });
-            document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(function(el) {
-                var key = el.placeholder;
-                if (dict[key] && !originalTexts.has(el)) {
-                    originalTexts.set(el, el.placeholder);
-                    el.placeholder = dict[key];
+            );
+            var nodes = [];
+            var n;
+            while ((n = walker.nextNode())) nodes.push(n);
+            nodes.forEach(function(textNode) { translateTextNode(textNode, dict); });
+
+            // --- Placeholders ---
+            document.querySelectorAll('[placeholder]').forEach(function(el) {
+                var v = el.placeholder;
+                if (dict[v]) {
+                    if (!saved.has(el)) saved.set(el, v);
+                    el.placeholder = dict[v];
                 }
             });
+
+            // --- data-i18n attribute (explicit key) ---
+            document.querySelectorAll('[data-i18n]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    if (!saved.has(el)) saved.set(el, el.textContent);
+                    el.textContent = dict[key];
+                }
+            });
+
             document.documentElement.lang = 'en';
         }
         var btn = document.getElementById('langToggle');
@@ -436,7 +672,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize button label (we're always in PT on load)
         var btn = document.getElementById('langToggle');
         if (btn) {
             btn.textContent = 'EN';

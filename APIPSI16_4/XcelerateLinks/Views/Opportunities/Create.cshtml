@@ -156,9 +156,15 @@
 @section Scripts {
 <partial name="_ValidationScriptsPartial" />
 <script>
-document.querySelector('form').addEventListener('submit', function() {
-    var checked = Array.from(document.querySelectorAll('input[name="SelectedJobRoleIds"]:checked')).map(function(el){ return el.value; });
-    document.getElementById('reqJobRoleIds').value = checked.join(',');
-});
+(function() {
+    var form = document.querySelector('form');
+    var hiddenInput = document.getElementById('reqJobRoleIds');
+    if (form && hiddenInput) {
+        form.addEventListener('submit', function() {
+            var checked = Array.from(document.querySelectorAll('input[name="SelectedJobRoleIds"]:checked')).map(function(el){ return el.value; });
+            hiddenInput.value = checked.join(',');
+        });
+    }
+})();
 </script>
 }

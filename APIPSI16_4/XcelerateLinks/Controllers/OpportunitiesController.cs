@@ -86,6 +86,14 @@ namespace XcelerateLinks.Mvc.Controllers
 
             var opportunity = await resp.Content.ReadFromJsonAsync<Opportunity>();
             if (opportunity == null) return RedirectToAction(nameof(Index));
+
+            // Load job roles for tag display
+            var jrResp = await client.GetAsync("api/users/lookups/jobroles");
+            if (jrResp.IsSuccessStatusCode)
+                ViewBag.JobRoles = await jrResp.Content.ReadFromJsonAsync<IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>>() ?? Array.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>();
+            else
+                ViewBag.JobRoles = Array.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>();
+
             return View(opportunity);
         }
 
