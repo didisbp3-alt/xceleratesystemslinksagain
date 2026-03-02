@@ -1,0 +1,316 @@
+
+@model APIPSI16.Models.DTOs.UserDTO
+@{
+    ViewData["Title"] = "Edit Profile";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="mb-4">Edit Profile</h2>
+
+            <form asp-action="Edit" method="post" enctype="multipart/form-data" id="profileForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="UserId" />
+
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">Full Name</label>
+                            <input asp-for="Name" class="form-control" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" type="email" class="form-control" required />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PhoneNumber" class="form-label">Phone Number</label>
+                            <input asp-for="PhoneNumber" class="form-control" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DoB" class="form-label">Date of Birth</label>
+                            <input asp-for="DoB" type="date" class="form-control" />
+                            <span asp-validation-for="DoB" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Professional Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="Nationality" class="form-label">Nationality</label>
+                            <select asp-for="Nationality" class="form-select searchable-select" id="nationalitySelect">
+                                <option value="">— Select nationality —</option>
+                                @foreach (var n in (ViewBag.Nationalities as IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem> ?? Enumerable.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>()))
+                                {
+                                    @if (Model.Nationality == n.Id)
+                                    {
+                                        <option value="@n.Id" selected>@n.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@n.Id">@n.Name</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="Nationality" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Preferências de cargo</label>
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:0.75rem;max-height:180px;overflow-y:auto;">
+                                @foreach (var j in (ViewBag.JobRoles as IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem> ?? Enumerable.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>()))
+                                {
+                                    <label style="display:flex;align-items:center;gap:0.5rem;padding:0.2rem 0;cursor:pointer;font-size:0.88rem;">
+                                        <input type="checkbox" name="SelectedJobRoleIds" value="@j.Id" style="accent-color:#0052CC;"
+                                            @(Model.JobPreference == j.Id ? "checked" : "") />
+                                        @j.Name
+                                    </label>
+                                }
+                            </div>
+                            <input type="hidden" asp-for="JobPreference" id="jobPrefHidden" />
+                            <small class="text-muted">Podes escolher mais do que uma área.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProfileBio" class="form-label">About Me</label>
+                            <textarea asp-for="ProfileBio" class="form-control" rows="5" 
+                                      placeholder="Tell us about yourself, your experience, and your career goals..."></textarea>
+                            <span asp-validation-for="ProfileBio" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                    <a asp-action="Details" asp-route-id="@Model.UserId" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Profile Picture</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                        {
+                            <img src="@Model.ProfilePictureUrl" alt="Profile Picture" 
+                                 class="img-fluid rounded-circle mb-3" style="max-width: 200px;" id="profilePicturePreview" />
+                        }
+                        else
+                        {
+                            <div class="bg-secondary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                 style="width: 200px; height: 200px; font-size: 72px;" id="profilePicturePreview">
+                                @(Model.Name?.Substring(0, 1).ToUpper() ?? "U")
+                            </div>
+                        }
+                    </div>
+
+                    <form id="uploadPictureForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <input type="file" class="form-control" id="profilePictureInput" 
+                                   accept="image/jpeg,image/png,image/gif" />
+                            <small class="text-muted">Max 5MB. JPG, PNG, or GIF.</small>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary" id="uploadPictureBtn">
+                            <i class="bi bi-upload"></i> Upload Picture
+                        </button>
+                    </form>
+                    <div id="uploadMessage" class="mt-2"></div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Banner Image</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3" style="height:80px;overflow:hidden;border-radius:8px;background:linear-gradient(135deg,rgba(0,82,204,0.2),rgba(0,221,85,0.1));">
+                        @if (!string.IsNullOrEmpty(Model.BannerUrl))
+                        {
+                            <img src="@Model.BannerUrl" id="bannerPreview" style="width:100%;height:80px;object-fit:cover;" alt="Banner" />
+                        }
+                        else
+                        {
+                            <div id="bannerPreview" style="width:100%;height:80px;"></div>
+                        }
+                    </div>
+                    <input type="file" class="form-control form-control-sm mb-2" id="bannerInput" accept="image/jpeg,image/png,image/gif" />
+                    <small class="text-muted d-block mb-2">Recommended: 1400×350px. Max 5MB.</small>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="uploadBannerBtn">Upload Banner</button>
+                    <div id="bannerMessage" class="mt-2"></div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Profile Completion</h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: 60%;" 
+                             aria-valuenow="60" aria-valuemin="0" aria-valuemax="100">60%</div>
+                    </div>
+                    <p class="mt-2 text-muted small">
+                        Complete your profile to improve visibility to recruiters
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('uploadPictureBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('profilePictureInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const userId = @Model.UserId;
+            const messageDiv = document.getElementById('uploadMessage');
+            messageDiv.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> Uploading...';
+
+            try {
+                const response = await fetch(`/api/users/${userId}/upload-picture`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    messageDiv.innerHTML = '<div class="alert alert-success">Picture uploaded successfully!</div>';
+                    
+                    // Update preview
+                    const preview = document.getElementById('profilePicturePreview');
+                    if (preview.tagName === 'IMG') {
+                        preview.src = result.fileUrl;
+                    } else {
+                        preview.outerHTML = `<img src="${result.fileUrl}" alt="Profile Picture" 
+                            class="img-fluid rounded-circle mb-3" style="max-width: 200px;" id="profilePicturePreview" />`;
+                    }
+                    
+                    setTimeout(() => messageDiv.innerHTML = '', 3000);
+                } else {
+                    messageDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                messageDiv.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
+            }
+        });
+
+        // Banner upload
+        document.getElementById('uploadBannerBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('bannerInput');
+            const file = fileInput.files[0];
+            if (!file) { alert('Please select a banner image'); return; }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const userId = @Model.UserId;
+            const msgDiv = document.getElementById('bannerMessage');
+            msgDiv.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> Uploading...';
+
+            try {
+                const token = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('ApiAccessToken='))?.split('=')[1]
+                    || localStorage.getItem('token') || '';
+                const response = await fetch(`/api/users/${userId}/upload-banner`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    msgDiv.innerHTML = '<div class="alert alert-success">Banner updated!</div>';
+                    const preview = document.getElementById('bannerPreview');
+                    preview.style.backgroundImage = '';
+                    if (preview.tagName === 'IMG') {
+                        preview.src = result.fileUrl;
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = result.fileUrl;
+                        img.id = 'bannerPreview';
+                        img.style = 'width:100%;height:80px;object-fit:cover;';
+                        img.alt = 'Banner';
+                        preview.replaceWith(img);
+                    }
+                    setTimeout(() => msgDiv.innerHTML = '', 3000);
+                } else {
+                    msgDiv.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+                }
+            } catch (err) {
+                msgDiv.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
+            }
+        });
+    </script>
+    <script>
+    // Searchable selects – add live filter on type
+    document.querySelectorAll('.searchable-select').forEach(function(sel) {
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+        sel.parentNode.insertBefore(wrapper, sel);
+        wrapper.appendChild(sel);
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Search...';
+        input.className = 'form-control form-control-sm mb-1';
+        input.style.cssText = 'background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.15);color:inherit;';
+        wrapper.insertBefore(input, sel);
+
+        input.addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            Array.from(sel.options).forEach(function(opt) {
+                if (!opt.value) return; // keep placeholder
+                opt.style.display = opt.text.toLowerCase().includes(q) ? '' : 'none';
+            });
+        });
+    });
+    </script>
+    <script>
+    // Collect multi-select job preferences before form submit
+    document.getElementById('profileForm').addEventListener('submit', function() {
+        var checked = Array.from(document.querySelectorAll('input[name="SelectedJobRoleIds"]:checked')).map(function(el){ return el.value; });
+        // Keep just the first selected ID in JobPreference (for backward compatibility with the int field)
+        if (checked.length > 0) {
+            document.getElementById('jobPrefHidden').value = checked[0];
+        }
+    });
+    </script>
+}
+
