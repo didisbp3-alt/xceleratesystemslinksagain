@@ -167,6 +167,7 @@
     var entityId = @Model.CompanyId;
     var entityType = 'Company';
     var selectedScore = 0;
+    var existingRatingId = null;
 
     function getToken() {
         var m = document.cookie.split(';').map(function(c){return c.trim();}).find(function(c){return c.startsWith('ApiAccessToken=');});
@@ -179,11 +180,21 @@
         return s;
     }
 
+    function setStarUI(score) {
+        selectedScore = score;
+        document.querySelectorAll('#co-star-selector .star-opt').forEach(function(s) {
+            s.style.color = parseInt(s.dataset.val) <= score ? '#f59e0b' : '#a8b2c1';
+        });
+    }
+
     function loadRatings() {
+        var list = document.getElementById('co-ratings-list');
         fetch('/api/ratings/entity/' + entityType + '/' + entityId, {
             headers: { 'Authorization': 'Bearer ' + getToken() }
-        }).then(function(r){ return r.json(); }).then(function(ratings) {
-            var list = document.getElementById('co-ratings-list');
+        }).then(function(r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function(ratings) {
             var avgEl = document.getElementById('co-avg-rating-display');
             if (!ratings || ratings.length === 0) {
                 if (list) list.innerHTML = '<p style="color:#a8b2c1;font-size:0.88rem;">Ainda sem avaliações.</p>';
@@ -195,22 +206,45 @@
             if (list) {
                 list.innerHTML = ratings.map(function(r) {
                     var date = r.createdAt ? new Date(r.createdAt).toLocaleDateString('pt-PT') : '';
+                    var safeName = (r.ratedByUserName || 'Utilizador').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    var reviewHtml = r.review ? '<p style="font-size:0.85rem;color:#a8b2c1;margin:0;">' + r.review.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>' : '';
                     return '<div style="padding:0.75rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">' +
                         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">' +
-                        '<strong style="font-size:0.88rem;">' + (r.ratedByUserName || 'Utilizador') + '</strong>' +
+                        '<strong style="font-size:0.88rem;">' + safeName + '</strong>' +
                         '<span style="color:#f59e0b;">' + renderStars(r.score,5) + '</span></div>' +
-                        (r.review ? '<p style="font-size:0.85rem;color:#a8b2c1;margin:0;">' + r.review + '</p>' : '') +
+                        reviewHtml +
                         '<small style="color:#6b7280;">' + date + '</small></div>';
                 }).join('');
             }
-        }).catch(function(){});
+        }).catch(function() {
+            if (list) list.innerHTML = '<p style="color:#ef4444;font-size:0.88rem;">Não foi possível carregar as avaliações.</p>';
+        });
+    }
+
+    function loadMyRating() {
+        fetch('/api/ratings/my/' + entityType + '/' + entityId, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        }).then(function(r) {
+            if (r.status === 404) return null;
+            if (!r.ok) return null;
+            return r.json();
+        }).then(function(myRating) {
+            if (!myRating) return;
+            existingRatingId = myRating.ratingId;
+            setStarUI(myRating.score);
+            var reviewEl = document.getElementById('co-review-text');
+            if (reviewEl) reviewEl.value = myRating.review || '';
+            var btn = document.getElementById('co-submit-rating-btn');
+            if (btn) btn.textContent = 'Atualizar avaliação';
+            var msg = document.getElementById('co-rating-msg');
+            if (msg) msg.textContent = '(já avaliaste – podes editar)';
+        }).catch(function() {});
     }
 
     var stars = document.querySelectorAll('#co-star-selector .star-opt');
     stars.forEach(function(star) {
         star.addEventListener('click', function() {
-            selectedScore = parseInt(this.dataset.val);
-            stars.forEach(function(s) { s.style.color = parseInt(s.dataset.val) <= selectedScore ? '#f59e0b' : '#a8b2c1'; });
+            setStarUI(parseInt(this.dataset.val));
         });
         star.addEventListener('mouseover', function() {
             var v = parseInt(this.dataset.val);
@@ -239,6 +273,7 @@
     };
 
     loadRatings();
+    loadMyRating();
 })();
 </script>
 }

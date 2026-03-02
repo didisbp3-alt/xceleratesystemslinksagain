@@ -367,7 +367,8 @@ namespace APIPSI16.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LinkedInUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<string>("Name")
                         .HasMaxLength(50)
@@ -384,7 +385,12 @@ namespace APIPSI16.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PortfolioUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("SelectedJobRoleIds")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<byte>("Status")
                         .ValueGeneratedOnAdd()

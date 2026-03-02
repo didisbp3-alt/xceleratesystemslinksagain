@@ -107,15 +107,20 @@ namespace XcelerateLinks.Mvc.Controllers
             if (!await ValidateSessionAsync())
                 return RedirectToAction("Login", "Account");
 
+            var client = CreateAuthorizedClient();
+
             if (!ModelState.IsValid)
             {
                 if (model.Application.OpportunityId > 0)
                 {
-                    var oppClient = CreateAuthorizedClient();
-                    var oppR = await oppClient.GetAsync($"api/opportunities/{model.Application.OpportunityId}");
+                    var oppR = await client.GetAsync($"api/opportunities/{model.Application.OpportunityId}");
                     if (oppR.IsSuccessStatusCode)
                         ViewBag.Opportunity = await oppR.Content.ReadFromJsonAsync<Opportunity>();
                 }
+                var jrR2 = await client.GetAsync("api/users/lookups/jobroles");
+                ViewBag.JobRoles = jrR2.IsSuccessStatusCode
+                    ? await jrR2.Content.ReadFromJsonAsync<IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>>() ?? Array.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>()
+                    : Array.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>();
                 return View(model);
             }
 
@@ -127,21 +132,24 @@ namespace XcelerateLinks.Mvc.Controllers
                 LinkedInUrl = model.Application.LinkedInUrl,
                 PortfolioUrl = model.Application.PortfolioUrl,
                 YearsOfExperience = model.Application.YearsOfExperience,
-                OpenToRemote = model.Application.OpenToRemote
+                OpenToRemote = model.Application.OpenToRemote,
+                SelectedJobRoleIds = model.Application.SelectedJobRoleIds
             };
 
-            var client = CreateAuthorizedClient();
             var resp = await client.PostAsJsonAsync("api/jobapplications/apply", payload);
             if (!resp.IsSuccessStatusCode)
             {
                 ModelState.AddModelError("", await SafeReadStringAsync(resp) ?? "Unable to submit application.");
                 if (model.Application.OpportunityId > 0)
                 {
-                    var oppClient = CreateAuthorizedClient();
-                    var oppR = await oppClient.GetAsync($"api/opportunities/{model.Application.OpportunityId}");
+                    var oppR = await client.GetAsync($"api/opportunities/{model.Application.OpportunityId}");
                     if (oppR.IsSuccessStatusCode)
                         ViewBag.Opportunity = await oppR.Content.ReadFromJsonAsync<Opportunity>();
                 }
+                var jrR = await client.GetAsync("api/users/lookups/jobroles");
+                ViewBag.JobRoles = jrR.IsSuccessStatusCode
+                    ? await jrR.Content.ReadFromJsonAsync<IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>>() ?? Array.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>()
+                    : Array.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>();
                 return View(model);
             }
 
@@ -251,6 +259,8 @@ namespace XcelerateLinks.Mvc.Controllers
             public string? PortfolioUrl { get; set; }
             public int? YearsOfExperience { get; set; }
             public bool? OpenToRemote { get; set; }
+            // Comma-separated job role IDs chosen by the applicant
+            public string? SelectedJobRoleIds { get; set; }
         }
     }
 }

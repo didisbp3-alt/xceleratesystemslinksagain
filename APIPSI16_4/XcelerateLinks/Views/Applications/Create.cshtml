@@ -191,6 +191,41 @@
                 </div>
             </div>
 
+            <!-- Job Roles -->
+            @{
+                var allRoles = ViewBag.JobRoles as IEnumerable<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem> ?? Enumerable.Empty<XcelerateLinks.Mvc.Controllers.UsersController.LookupItem>();
+                var roleList = allRoles.ToList();
+                // Opportunity's required roles highlighted
+                var opp2 = ViewBag.Opportunity as APIPSI16.Models.Opportunity;
+                var requiredIds = (opp2?.RequiredJobRoleIds ?? "")
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => int.TryParse(s.Trim(), out var n) ? (int?)n : null)
+                    .Where(n => n.HasValue).Select(n => n!.Value)
+                    .ToHashSet();
+            }
+            @if (roleList.Any())
+            {
+                <div class="apply-section">
+                    <div class="apply-section-title">Áreas de trabalho</div>
+                    <p style="font-size:0.82rem;color:#a8b2c1;margin-bottom:0.75rem;">Seleciona as funções às quais te candidatas.</p>
+                    <input type="hidden" asp-for="Application.SelectedJobRoleIds" id="selectedJobRoleIds" />
+                    <div id="job-roles-selector" style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+                        @foreach (var role in roleList)
+                        {
+                            var isRequired = requiredIds.Contains(role.Id);
+                            <button type="button"
+                                    class="role-tag-btn @(isRequired ? "role-tag-required" : "")"
+                                    data-id="@role.Id"
+                                    style="background:@(isRequired ? "rgba(0,82,204,0.15)" : "rgba(255,255,255,0.05)");border:1px solid @(isRequired ? "rgba(0,82,204,0.5)" : "rgba(255,255,255,0.12)");color:@(isRequired ? "#4f8ef7" : "inherit");border-radius:20px;padding:0.3rem 0.85rem;font-size:0.8rem;cursor:pointer;transition:all 0.15s;"
+                                    onclick="toggleRole(this)">
+                                @(isRequired ? "💼 " : "")@role.Name
+                            </button>
+                        }
+                    </div>
+                    <span asp-validation-for="Application.SelectedJobRoleIds" class="text-danger" style="display:block;margin-top:0.4rem;font-size:0.8rem;"></span>
+                </div>
+            }
+
             <!-- Cover letter -->
             <div class="apply-section">
                 <div class="apply-section-title">Carta de Apresentação</div>
@@ -221,5 +256,53 @@
         cnt.textContent = ta.value.length;
         ta.addEventListener('input', () => cnt.textContent = ta.value.length);
     }
+
+    // Job role multi-select toggle
+    // Initialize from the hidden field value (preserves selections on form error re-render)
+    var hiddenField = document.getElementById('selectedJobRoleIds');
+    var selectedRoleIds = new Set(
+        (hiddenField && hiddenField.value) ? hiddenField.value.split(',').filter(Boolean) : []
+    );
+
+    function applyRoleUI(btn, selected) {
+        if (selected) {
+            btn.style.background = 'rgba(0,221,85,0.12)';
+            btn.style.border = '1px solid rgba(0,221,85,0.4)';
+            btn.style.color = '#00DD55';
+            btn.style.fontWeight = '600';
+        } else {
+            // Restore: if it was a required role keep blue hint, else default
+            var isRequired = btn.classList.contains('role-tag-required');
+            btn.style.background = isRequired ? 'rgba(0,82,204,0.15)' : 'rgba(255,255,255,0.05)';
+            btn.style.border = '1px solid ' + (isRequired ? 'rgba(0,82,204,0.5)' : 'rgba(255,255,255,0.12)');
+            btn.style.color = isRequired ? '#4f8ef7' : 'inherit';
+            btn.style.fontWeight = 'normal';
+        }
+    }
+
+    function toggleRole(btn) {
+        var id = btn.dataset.id;
+        if (selectedRoleIds.has(id)) {
+            selectedRoleIds.delete(id);
+        } else {
+            selectedRoleIds.add(id);
+        }
+        applyRoleUI(btn, selectedRoleIds.has(id));
+        if (hiddenField) hiddenField.value = Array.from(selectedRoleIds).join(',');
+    }
+
+    // On load: sync UI with already-selected IDs (from hidden field or pre-select required roles)
+    document.querySelectorAll('#job-roles-selector .role-tag-btn').forEach(function(btn) {
+        var id = btn.dataset.id;
+        if (selectedRoleIds.has(id)) {
+            // Already selected from a previous form submission
+            applyRoleUI(btn, true);
+        } else if (btn.classList.contains('role-tag-required')) {
+            // Auto-select opportunity's required roles on first load
+            selectedRoleIds.add(id);
+            applyRoleUI(btn, true);
+        }
+    });
+    if (hiddenField) hiddenField.value = Array.from(selectedRoleIds).join(',');
 </script>
 }

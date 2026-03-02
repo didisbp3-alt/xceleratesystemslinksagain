@@ -48,7 +48,8 @@ namespace APIPSI16.Controllers
                 LinkedInUrl = dto.LinkedInUrl,
                 PortfolioUrl = dto.PortfolioUrl,
                 YearsOfExperience = dto.YearsOfExperience,
-                OpenToRemote = dto.OpenToRemote
+                OpenToRemote = dto.OpenToRemote,
+                SelectedJobRoleIds = dto.SelectedJobRoleIds
             };
 
             await _db.JobApplications.AddAsync(app);

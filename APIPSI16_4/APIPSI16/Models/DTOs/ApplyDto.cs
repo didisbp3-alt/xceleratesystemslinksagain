@@ -10,5 +10,7 @@ namespace APIPSI16.Models.DTOs
         public string? PortfolioUrl { get; set; }
         public int? YearsOfExperience { get; set; }
         public bool? OpenToRemote { get; set; }
+        // Comma-separated job role IDs selected by applicant
+        public string? SelectedJobRoleIds { get; set; }
     }
 }

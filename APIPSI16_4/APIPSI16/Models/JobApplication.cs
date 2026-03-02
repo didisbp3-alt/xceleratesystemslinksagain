@@ -25,6 +25,8 @@ public partial class JobApplication
     public string? PortfolioUrl { get; set; }
     public int? YearsOfExperience { get; set; }
     public bool? OpenToRemote { get; set; }
+    // Comma-separated job role IDs chosen by the applicant
+    public string? SelectedJobRoleIds { get; set; }
 
     public virtual Opportunity Opportunity { get; set; } = null!;
 
