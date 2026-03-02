@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using APIPSI16.Data;
 using APIPSI16.Models;
 using APIPSI16.Models.DTOs;
@@ -17,10 +18,15 @@ namespace APIPSI16.Controllers
     public class JobApplicationsController : ControllerBase
     {
         private readonly xcleratesystemslinks_SampleDBContext _db;
-        public JobApplicationsController(xcleratesystemslinks_SampleDBContext db) => _db = db;
+        private readonly ILogger<JobApplicationsController> _logger;
+
+        public JobApplicationsController(xcleratesystemslinks_SampleDBContext db, ILogger<JobApplicationsController> logger)
+        {
+            _db = db;
+            _logger = logger;
+        }
 
         // POST api/jobapplications/apply
-        // Payload: { OpportunityId: int, Name: "optional applicant-provided name (varchar(50))" }
         [HttpPost("apply")]
         public async Task<IActionResult> Apply([FromBody] ApplyDto dto)
         {
@@ -29,7 +35,6 @@ namespace APIPSI16.Controllers
 
             if (dto.OpportunityId <= 0) return BadRequest("OpportunityId is required.");
 
-            // optional: validate Name length
             if (!string.IsNullOrWhiteSpace(dto.Name) && dto.Name.Length > 50)
                 return BadRequest("Name must be 50 characters or fewer.");
 
@@ -43,36 +48,43 @@ namespace APIPSI16.Controllers
                 Status = 0,
                 AppliedAt = DateTime.UtcNow,
                 Name = string.IsNullOrWhiteSpace(dto.Name) ? null : dto.Name,
-                CoverLetter = dto.CoverLetter,
-                PhoneNumber = dto.PhoneNumber,
-                LinkedInUrl = dto.LinkedInUrl,
-                PortfolioUrl = dto.PortfolioUrl,
+                CoverLetter = string.IsNullOrWhiteSpace(dto.CoverLetter) ? null : dto.CoverLetter,
+                PhoneNumber = string.IsNullOrWhiteSpace(dto.PhoneNumber) ? null : dto.PhoneNumber,
+                LinkedInUrl = string.IsNullOrWhiteSpace(dto.LinkedInUrl) ? null : dto.LinkedInUrl,
+                PortfolioUrl = string.IsNullOrWhiteSpace(dto.PortfolioUrl) ? null : dto.PortfolioUrl,
                 YearsOfExperience = dto.YearsOfExperience,
                 OpenToRemote = dto.OpenToRemote,
-                SelectedJobRoleIds = dto.SelectedJobRoleIds
+                SelectedJobRoleIds = string.IsNullOrWhiteSpace(dto.SelectedJobRoleIds) ? null : dto.SelectedJobRoleIds
             };
 
             await _db.JobApplications.AddAsync(app);
             await _db.SaveChangesAsync();
 
-            var opportunity = await _db.Opportunities.FindAsync(dto.OpportunityId);
-            if (opportunity != null)
+            // Best-effort notification — failure here must not fail the application submission
+            try
             {
-                // best-effort notify: if the opportunity has a CreatorId or CompanyId property, adjust accordingly
-                var notifyUserId = opportunity.CreatorId ?? 0;
-                if (notifyUserId != 0)
+                var opportunity = await _db.Opportunities.FindAsync(dto.OpportunityId);
+                if (opportunity != null)
                 {
-                    await _db.Notifications.AddAsync(new Notification
+                    var notifyUserId = opportunity.CreatorId ?? 0;
+                    if (notifyUserId > 0)
                     {
-                        UserId = notifyUserId,
-                        ActorUserId = uid.Value,
-                        Type = "JobApplied",
-                        Payload = $"{{\"applicationId\":{app.JobApplicationId}}}",
-                        IsRead = false,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    await _db.SaveChangesAsync();
+                        await _db.Notifications.AddAsync(new Notification
+                        {
+                            UserId = notifyUserId,
+                            ActorUserId = uid.Value,
+                            Type = "JobApplied",
+                            Payload = $"{{\"applicationId\":{app.JobApplicationId}}}",
+                            IsRead = false,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                        await _db.SaveChangesAsync();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Best-effort notification failed for application {AppId} — application was still saved.", app.JobApplicationId);
             }
 
             return CreatedAtAction(nameof(Get), new { id = app.JobApplicationId }, app);

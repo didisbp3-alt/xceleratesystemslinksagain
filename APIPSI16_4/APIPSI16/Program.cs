@@ -216,6 +216,17 @@ using (var scope = app.Services.CreateScope())
         _ = ctx.Model;
         logger.LogInformation("DbContext resolved successfully.");
 
+        // Apply pending migrations automatically at startup
+        try
+        {
+            ctx.Database.Migrate();
+            logger.LogInformation("Database migrations applied successfully.");
+        }
+        catch (Exception migEx)
+        {
+            logger.LogError(migEx, "Failed to apply database migrations. The application will continue but may have schema issues.");
+        }
+
         logger.LogInformation("=== Startup complete ===");
     }
     catch (Exception ex)

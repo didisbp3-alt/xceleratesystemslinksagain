@@ -215,7 +215,7 @@ public partial class xcleratesystemslinks_SampleDBContext : DbContext
                 .HasConstraintName("FK_JobApplications_Opportunity");
 
             entity.HasOne(d => d.User)
-                .WithMany()
+                .WithMany(p => p.JobApplications)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK_JobApplications_User");
         });

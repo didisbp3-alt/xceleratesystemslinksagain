@@ -403,9 +403,6 @@ namespace APIPSI16.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("UserId1")
-                        .HasColumnType("int");
-
                     b.Property<int?>("YearsOfExperience")
                         .HasColumnType("int");
 
@@ -415,8 +412,6 @@ namespace APIPSI16.Migrations
                     b.HasIndex("OpportunityId");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("JobApplications", (string)null);
                 });
@@ -1150,15 +1145,11 @@ namespace APIPSI16.Migrations
                         .HasConstraintName("FK_JobApplications_Opportunity");
 
                     b.HasOne("APIPSI16.Models.User", "User")
-                        .WithMany()
+                        .WithMany("JobApplications")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_JobApplications_User");
-
-                    b.HasOne("APIPSI16.Models.User", null)
-                        .WithMany("JobApplications")
-                        .HasForeignKey("UserId1");
 
                     b.Navigation("Opportunity");
 

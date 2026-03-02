@@ -122,14 +122,8 @@
             @Html.AntiForgeryToken()
             <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-            @if (opp != null)
-            {
-                <input type="hidden" asp-for="Application.OpportunityId" value="@opp.Id" />
-            }
-            else
-            {
-                <input type="hidden" asp-for="Application.OpportunityId" />
-            }
+            @* OpportunityId is always set from the route and model — hidden input uses only asp-for *@
+            <input type="hidden" asp-for="Application.OpportunityId" />
 
             <!-- Personal info -->
             <div class="apply-section">
@@ -181,8 +175,7 @@
                     <div class="form-group-styled">
                         <label style="margin-bottom:0.75rem;">Preferências de trabalho</label>
                         <div class="toggle-row">
-                            <input type="checkbox"
-                                   name="Application.OpenToRemote"
+                            <input asp-for="Application.OpenToRemote"
                                    class="toggle-input"
                                    id="openRemote" />
                             <label for="openRemote" class="toggle-label">Disponível para trabalho remoto</label>
