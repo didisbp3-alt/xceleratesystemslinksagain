@@ -93,8 +93,33 @@ namespace APIPSI16.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
-            var app = await _db.JobApplications.FindAsync(id);
+            var uid = GetUserId();
+            if (uid == null) return Unauthorized();
+
+            var app = await _db.JobApplications
+                .Include(a => a.Opportunity).ThenInclude(o => o.Company)
+                .Include(a => a.User)
+                .FirstOrDefaultAsync(a => a.JobApplicationId == id);
             if (app == null) return NotFound();
+
+            // Allow the applicant themselves, admins, or company members to view
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole != "0" && app.UserId != uid.Value)
+            {
+                // Check if requester is an employer-member of the opportunity's company
+                var companyId = app.Opportunity?.CompanyId;
+                if (companyId != null)
+                {
+                    var isMember = await _db.CompanyMembers
+                        .AnyAsync(cm => cm.CompanyId == companyId.Value && cm.UserId == uid.Value);
+                    if (!isMember) return Forbid();
+                }
+                else
+                {
+                    return Forbid();
+                }
+            }
+
             return Ok(app);
         }
 
@@ -226,7 +251,40 @@ namespace APIPSI16.Controllers
             return Ok(pipeline);
         }
 
-        // GET: api/jobapplications (admin: all, user: their own)
+        // GET: api/jobapplications/for-company/{companyId}
+        // Returns all applications for a company's opportunities — accessible by admin (role=0)
+        // and by employers (role=2) who are verified company members.
+        [HttpGet("for-company/{companyId}")]
+        [Authorize(Roles = "0,2")]
+        public async Task<IActionResult> ForCompany(int companyId, int? opportunityId = null)
+        {
+            var actorId = GetUserId();
+            if (actorId == null) return Unauthorized();
+
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole != "0")
+            {
+                var isMember = await _db.CompanyMembers
+                    .AnyAsync(cm => cm.CompanyId == companyId && cm.UserId == actorId.Value);
+                if (!isMember) return Forbid();
+            }
+
+            var query = _db.JobApplications
+                .Include(a => a.Opportunity).ThenInclude(o => o.Company)
+                .Include(a => a.User)
+                .Where(a => a.Opportunity != null && a.Opportunity.CompanyId == companyId);
+
+            if (opportunityId.HasValue)
+                query = query.Where(a => a.OpportunityId == opportunityId.Value);
+
+            var list = await query
+                .OrderByDescending(a => a.AppliedAt)
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        // GET: api/jobapplications (admin only — full list)
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -237,20 +295,9 @@ namespace APIPSI16.Controllers
             if (userRole != "0") return Forbid();
 
             var list = await _db.JobApplications
-                .Include(a => a.Opportunity)
+                .Include(a => a.Opportunity).ThenInclude(o => o.Company)
                 .Include(a => a.User)
-                .Select(a => new
-                {
-                    a.JobApplicationId,
-                    a.OpportunityId,
-                    OpportunityTitle = a.Opportunity.Title,
-                    a.UserId,
-                    UserName = a.User.Name,
-                    a.Status,
-                    a.AppliedAt,
-                    a.UpdatedAt,
-                    a.Name
-                })
+                .OrderByDescending(a => a.AppliedAt)
                 .ToListAsync();
 
             return Ok(list);
@@ -282,17 +329,9 @@ namespace APIPSI16.Controllers
             if (uid != userId && !User.IsInRole("0")) return Forbid();
 
             var list = await _db.JobApplications
+                .Include(a => a.Opportunity).ThenInclude(o => o.Company)
                 .Where(a => a.UserId == userId)
-                .Select(a => new
-                {
-                    a.JobApplicationId,
-                    a.OpportunityId,
-                    a.UserId,
-                    a.Status,
-                    a.AppliedAt,
-                    a.UpdatedAt,
-                    a.Name
-                })
+                .OrderByDescending(a => a.AppliedAt)
                 .ToListAsync();
 
             return Ok(list);

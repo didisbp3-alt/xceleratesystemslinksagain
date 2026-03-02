@@ -194,22 +194,30 @@ namespace XcelerateLinks.Mvc.Controllers
             if (!await ValidateSessionAsync())
                 return RedirectToAction("Login", "Account");
 
+            if (companyId <= 0)
+                return RedirectToAction(nameof(Index));
+
             var client = CreateAuthorizedClient();
             ViewBag.CompanyId = companyId;
             ViewBag.OpportunityId = opportunityId;
 
-            // Load applications for this company (filter client-side from all)
+            // Build the company-specific endpoint URL (both admin and employer can access this)
+            var url = $"api/jobapplications/for-company/{companyId}";
+            if (opportunityId.HasValue && opportunityId.Value > 0)
+                url += $"?opportunityId={opportunityId.Value}";
+
             IEnumerable<JobApplication> apps = Array.Empty<JobApplication>();
-            var allResp = await client.GetAsync("api/jobapplications");
-            if (allResp.IsSuccessStatusCode)
+            var resp = await client.GetAsync(url);
+            if (resp.IsSuccessStatusCode)
             {
-                var all = await allResp.Content.ReadFromJsonAsync<IEnumerable<JobApplication>>();
-                if (all != null)
-                {
-                    apps = all;
-                    if (opportunityId.HasValue)
-                        apps = apps.Where(a => a.OpportunityId == opportunityId.Value);
-                }
+                apps = await resp.Content.ReadFromJsonAsync<IEnumerable<JobApplication>>()
+                       ?? Array.Empty<JobApplication>();
+            }
+            else
+            {
+                _logger.LogWarning("Pipeline fetch failed: {Status} — {Body}",
+                    resp.StatusCode, await SafeReadStringAsync(resp));
+                ViewBag.Error = "Não foi possível carregar as candidaturas.";
             }
 
             ViewBag.Applications = apps.ToList();
